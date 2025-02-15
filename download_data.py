@@ -3,7 +3,7 @@ import zipfile
 import os
 
 # Google Drive File ID (Replace with yours)
-FILE_ID = "https://drive.google.com/file/d/1BV-HLBtKluSgiwpPbAxv6Zh1lCAsZ1XO/view?usp=sharing"
+FILE_ID = "1BV-HLBtKluSgiwpPbAxv6Zh1lCAsZ1XO"
 OUTPUT_ZIP = "dataset.zip"
 
 # Download dataset
