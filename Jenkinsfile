@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         
+        PATH = "$PATH:/var/lib/jenkins/.local/bin"
         DOCKER_IMAGE = 'ghcr.io/Onyesi-john/yolo-app:latest'  // Update with your repo
         MODEL_PATH = '/home/john/runs/detect/train3/weights/best.pt'  // Path to the model inside the project
         VENV_DIR = '.venv'  // Path to your virtual environment (update if needed)
