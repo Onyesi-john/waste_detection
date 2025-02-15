@@ -7,7 +7,7 @@ from ultralytics import YOLO
 app = Flask(__name__)
 
 # Load trained YOLO model
-MODEL_PATH = "runs/detect/train/best.pt"  # Update with the correct path to your trained model
+MODEL_PATH = "/home/john/runs/detect/train3/weights/best.pt"
 model = YOLO(MODEL_PATH)
 
 UPLOAD_FOLDER = "uploads"

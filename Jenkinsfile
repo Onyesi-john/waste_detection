@@ -1,47 +1,53 @@
 pipeline {
-    agent any
+    agent any  // Runs on any available agent
 
     environment {
-        DOCKER_IMAGE = 'ghcr.io/Onyesi-john/waste_detection:latest'
-        GDRIVE_FILE_ID = '1BV-HLBtKluSgiwpPbAxv6Zh1lCAsZ1XO'  // Replace with Google Drive File ID
+        DOCKER_IMAGE = 'ghcr.io/Onyesi-john/yolo-app:latest'  // Update with your repo
+        MODEL_PATH = '/home/john/runs/detect/train3/weights/best.pt'  // Path to trained model
     }
 
     stages {
-        stage('Clone Repo') {
+        stage('Clone Repository') {
             steps {
-                git branch: 'stage', url: 'https://github.com/Onyesi-john/waste_detection.git'
-            }
-        }
-        stage('Set Up Python') {
-            steps {
-                sh 'python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt'
+                git branch: 'stage', url: 'https://github.com/Onyesi-john/waste_detection.git'  // Change repo URL
             }
         }
 
-        stage('Download Dataset') {
+        stage('Install Dependencies') {
             steps {
-                sh 'python download_data.py'
+                sh 'pip install -r requirements.txt'
             }
         }
 
-        stage('Train Model') {
+        stage('Ensure Model Exists') {
             steps {
-                sh 'python train.py'
-            }
-        }
-
-        stage('Docker Build & Push') {
-            steps {
-                withDockerRegistry([credentialsId: 'github-token', url: 'https://ghcr.io']) {
-                    sh 'docker build -t ${DOCKER_IMAGE} .'
-                    sh 'docker push ${DOCKER_IMAGE}'
+                script {
+                    if (!fileExists(MODEL_PATH)) {
+                        error "Model file not found at ${MODEL_PATH}. Make sure training is complete!"
+                    }
+                    sh "cp ${MODEL_PATH} ./best.pt"  // Copy model to project directory
                 }
             }
         }
 
-        stage('Deploy App') {
+        stage('Build Docker Image') {
             steps {
-                sh 'docker run -d -p 8000:8000 ${DOCKER_IMAGE}'
+                sh 'docker build -t $DOCKER_IMAGE .'
+            }
+        }
+
+        stage('Push to GitHub Container Registry') {
+            steps {
+                withCredentials([string(credentialsId: 'ghcr-token', variable: 'GITHUB_TOKEN')]) {
+                    sh 'echo $GITHUB_TOKEN | docker login ghcr.io -u Onyesi-john --password-stdin'
+                    sh 'docker push $DOCKER_IMAGE'
+                }
+            }
+        }
+
+        stage('Deploy Container') {
+            steps {
+                sh 'docker run -d -p 5000:5000 --name yolo-app $DOCKER_IMAGE'
             }
         }
     }

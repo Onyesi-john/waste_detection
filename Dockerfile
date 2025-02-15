@@ -1,10 +1,20 @@
+# Use official Python image
 FROM python:3.10
 
+# Set working directory
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
+# Copy project files
 COPY . .
 
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Set model path as environment variable
+ENV MODEL_PATH="/home/john/runs/detect/train3/weights/best.pt"
+
+# Expose port (change based on your app)
+EXPOSE 5000
+
+# Run the application
 CMD ["python", "app.py"]
