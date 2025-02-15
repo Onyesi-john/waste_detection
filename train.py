@@ -1,9 +1,13 @@
 from ultralytics import YOLO
 
-# Load YOLO model
-model = YOLO("yolov8n.pt")  # Update if you use a different weight file
+# Load a smaller model (YOLOv5n instead of YOLOv8)
+model = YOLO("yolov5n.pt")  # Use YOLOv5 Nano model
 
-# Train model
-model.train(data="dataset/data.yaml", epochs=50, imgsz=640)
-
-print("✅ Training completed!")
+# Train the model with fewer epochs
+model.train(
+    data="dataset/data.yaml",  
+    epochs=15,  
+    imgsz=416,  
+    batch=8,  
+    workers=2  
+)
