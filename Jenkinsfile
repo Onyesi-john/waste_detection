@@ -2,6 +2,7 @@ pipeline {
     agent any  // Runs on any available agent
 
     environment {
+        PATH = "$PATH:/var/lib/jenkins/.local/bin"
         DOCKER_IMAGE = 'ghcr.io/Onyesi-john/yolo-app:latest'  // Update with your repo
         MODEL_PATH = '/home/john/runs/detect/train3/weights/best.pt'  // Path to trained model
     }
