@@ -1,63 +1,56 @@
 pipeline {
-    agent any  // Runs on any available agent
+    agent any
 
     environment {
-        
-        PATH = "$PATH:/var/lib/jenkins/.local/bin"
-        DOCKER_IMAGE = 'ghcr.io/Onyesi-john/yolo-app:latest'  // Update with your repo
-        MODEL_PATH = '/home/john/runs/detect/train3/weights/best.pt'  // Path to the model inside the project
-        VENV_DIR = '.venv'  // Path to your virtual environment (update if needed)
-    }
+    DOCKER_IMAGE = 'latest'
+    GITHUB_REGISTRY = 'ghcr.io'  // GitHub Container Registry
+    GITHUB_REPO = 'onyesi-john/waste_detect'  // Replace with your actual GitHub repository name
+   }
+
 
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'stage', url: 'https://github.com/Onyesi-john/waste_detection.git'  // Change repo URL
+               git branch: 'stage', url: 'https://github.com/Onyesi-john/mlops.git'
             }
         }
 
-        stage('Set Up Virtual Environment') {
+        stage('Set Up Python Environment') {
             steps {
                 script {
-                    // Check if virtual environment exists, if not, create it
-                    if (!fileExists("${VENV_DIR}/bin/activate")) {
-                        sh 'python3 -m venv .venv'
-                    }
-                    // Activate the virtual environment
-                    sh 'source .venv/bin/activate'
+                    // Set up the virtual environment and install dependencies
+                    sh '''
+                        python3 -m venv venv
+                        . venv/bin/activate
+                        pip install --upgrade pip
+                        pip install -r requirements.txt 
+                    '''
                 }
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                // Ensure we are in the virtual environment before installing dependencies
-                sh '''
-                    source .venv/bin/activate
-                    pip install -r requirements.txt
-                '''
-            }
-        }
-
-        stage('Ensure Model Exists') {
+        stage('Train Model') {
             steps {
                 script {
-                    if (!fileExists(MODEL_PATH)) {
-                        error "Model file not found at ${MODEL_PATH}. Make sure training is complete!"
-                    }
-                    sh "cp ${MODEL_PATH} ./best.pt"  // Copy model to project directory
+                    sh '''#!/bin/bash
+                    source venv/bin/activate
+                    python train.py
+                    '''
                 }
             }
         }
 
         stage('Build Docker Image') {
-            steps {
-                sh '''
-                    source .venv/bin/activate
-                    docker build -t $DOCKER_IMAGE .
-                '''
-            }
-        }
+             steps {
+                  script {
+                           // Authenticate to GitHub Container Registry using Jenkins credentials
+                          withDockerRegistry([credentialsId: 'new_pipeline', url: "https://${GITHUB_REGISTRY}"]) {
+                          // Build the Docker image with the correct tag format
+                       sh 'docker build -t ${GITHUB_REGISTRY}/${GITHUB_REPO}:${DOCKER_IMAGE} .'
+                  }
+              }
+           }
+       }
 
         stage('Push to GitHub Container Registry') {
             steps {
