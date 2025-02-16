@@ -35,7 +35,7 @@ pipeline {
                sh '''
                 # Activate virtual environment and train model
                  source venv/bin/activate
-                p   ython train.py
+                    python train.py
 
                 # Ensure the app directory exists
                     mkdir -p ./app
