@@ -2,23 +2,21 @@ pipeline {
     agent any
 
     environment {
-    DOCKER_IMAGE = 'latest'
-    GITHUB_REGISTRY = 'ghcr.io'  // GitHub Container Registry
-    GITHUB_REPO = 'onyesi-john/waste_detection'  // Replace with your actual GitHub repository name
-   }
-
+        DOCKER_IMAGE = 'latest'
+        GITHUB_REGISTRY = 'ghcr.io'
+        GITHUB_REPO = 'onyesi-john/waste_detection'
+    }
 
     stages {
         stage('Clone Repository') {
             steps {
-               git branch: 'stage', url: 'https://github.com/Onyesi-john/waste_detection.git'
+                git branch: 'stage', url: 'https://github.com/Onyesi-john/waste_detection.git'
             }
         }
 
         stage('Set Up Python Environment') {
             steps {
                 script {
-                    // Set up the virtual environment and install dependencies
                     sh '''#!/bin/bash
                         python3 -m venv venv
                         . venv/bin/activate
@@ -30,49 +28,54 @@ pipeline {
         }
 
         stage('Train Model') {
-          steps {
-            script {
-               sh ''' #!/bin/bash
-                # Activate virtual environment and train model
-                 source venv/bin/activate
-                    python train.py
+            steps {
+                script {
+                    sh '''#!/bin/bash
+                        . venv/bin/activate
+                        python train.py
 
-                # Ensure the app directory exists
-                    mkdir -p ./app
+                        if [ -d "runs/detect" ]; then
+                            MODEL_DIR=$(ls -td runs/detect/train* 2>/dev/null | head -1)
+                            if [ -n "$MODEL_DIR" ]; then
+                                echo "Latest Model Directory: $MODEL_DIR"
+                                cp $MODEL_DIR/weights/best.pt ./best.pt || { echo "Error: best.pt not found!"; exit 1; }
+                            else
+                                echo "Error: No training directory found!"
+                                exit 1
+                            fi
+                        else
+                            echo "Error: runs/detect directory does not exist!"
+                            exit 1
+                        fi
 
-                # Get the latest trained model directory
-                    MODEL_DIR=$(ls -td runs/detect/train* | head -1)
-                echo "Latest Model Directory: $MODEL_DIR"
-
-                # Copy best.pt to the project root
-                    cp $MODEL_DIR/weights/best.pt ./best.pt
-
-                # Verify if best.pt exists
-                 ls -lh ./best.pt
-                '''
+                        ls -lh ./best.pt
+                    '''
+                }
             }
         }
-    }
+
         stage('Build Docker Image') {
-             steps {
-                  script {
-                           // Authenticate to GitHub Container Registry using Jenkins credentials
-                          withDockerRegistry([credentialsId: 'new_pipeline', url: "https://${GITHUB_REGISTRY}"]) {
-                          // Build the Docker image with the correct tag format
-                       sh 'docker build -t ${GITHUB_REGISTRY}/${GITHUB_REPO}:${DOCKER_IMAGE} .'
-                  }
-              }
-           }
-       }
+            steps {
+                script {
+                    sh '''
+                        if [ ! -f "./best.pt" ]; then
+                            echo "Error: best.pt not found, training might have failed!"
+                            exit 1
+                        fi
+                        docker build -t ${GITHUB_REGISTRY}/${GITHUB_REPO}:${DOCKER_IMAGE} .
+                    '''
+                }
+            }
+        }
 
         stage('Push to GitHub Container Registry') {
             steps {
                 withCredentials([string(credentialsId: 'ghcr-token', variable: 'GITHUB_TOKEN')]) {
-                sh '''
-                    source .venv/bin/activate
-                    echo $GITHUB_TOKEN | docker login ghcr.io -u Onyesi-john --password-stdin
-                    docker push ghcr.io/onyesi-john/waste_detection:latest
-                '''
+                    sh '''
+                        . venv/bin/activate
+                        echo $GITHUB_TOKEN | docker login ghcr.io -u Onyesi-john --password-stdin
+                        docker push ghcr.io/onyesi-john/waste_detection:latest
+                    '''
                 }
             }
         }
@@ -80,12 +83,13 @@ pipeline {
         stage('Deploy Container') {
             steps {
                 sh '''
-                source .venv/bin/activate
-                docker pull ghcr.io/onyesi-john/waste_detection:latest
-                docker run -d -p 5000:5000 --name yolo-app ghcr.io/onyesi-john/waste_detection:latest
-            '''
+                    . venv/bin/activate
+                    docker stop yolo-app || true
+                    docker rm yolo-app || true
+                    docker pull ghcr.io/onyesi-john/waste_detection:latest
+                    docker run -d -p 5000:5000 --name yolo-app ghcr.io/onyesi-john/waste_detection:latest
+                '''
             }
         }
-
     }
 }
