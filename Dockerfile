@@ -13,11 +13,16 @@ RUN apt-get update && apt-get install -y \
 COPY app.py /app/
 COPY requirements.txt /app/
 
+# Copy the latest model (Jenkins ensures the correct file is here)
+COPY best.pt /app/best.pt
+
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+
 # Set model path as environment variable
-ENV MODEL_PATH="/home/john/runs/detect/train3/weights/best.pt"
+ENV MODEL_PATH="/app/best.pt"
+
 
 # Expose port (change based on your app)
 EXPOSE 5000

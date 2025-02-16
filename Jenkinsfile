@@ -30,16 +30,18 @@ pipeline {
         }
 
         stage('Train Model') {
-            steps {
-                script {
-                    sh '''#!/bin/bash
-                    source venv/bin/activate
-                    python train.py
+           steps {
+              script {
+                     sh '''
+                         source venv/bin/activate
+                         python train.py
+                         MODEL_DIR=$(ls -td runs/detect/train* | head -1)
+                         echo "Latest Model Directory: $MODEL_DIR"
+                         cp $MODEL_DIR/weights/best.pt ./app/best.pt
                     '''
-                }
-            }
-        }
-
+               }
+             }
+           }
         stage('Build Docker Image') {
              steps {
                   script {
@@ -55,11 +57,11 @@ pipeline {
         stage('Push to GitHub Container Registry') {
             steps {
                 withCredentials([string(credentialsId: 'ghcr-token', variable: 'GITHUB_TOKEN')]) {
-                    sh '''
-                        source .venv/bin/activate
-                        echo $GITHUB_TOKEN | docker login ghcr.io -u Onyesi-john --password-stdin
-                        docker push $DOCKER_IMAGE
-                    '''
+                sh '''
+                    source .venv/bin/activate
+                    echo $GITHUB_TOKEN | docker login ghcr.io -u Onyesi-john --password-stdin
+                    docker push ghcr.io/onyesi-john/waste_detection:latest
+                '''
                 }
             }
         }
@@ -67,10 +69,12 @@ pipeline {
         stage('Deploy Container') {
             steps {
                 sh '''
-                    source .venv/bin/activate
-                    docker run -d -p 5000:5000 --name yolo-app $DOCKER_IMAGE
-                '''
+                source .venv/bin/activate
+                docker pull ghcr.io/onyesi-john/waste_detection:latest
+                docker run -d -p 5000:5000 --name yolo-app ghcr.io/onyesi-john/waste_detection:latest
+            '''
             }
         }
+
     }
 }
