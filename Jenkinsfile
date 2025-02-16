@@ -31,17 +31,28 @@ pipeline {
 
         stage('Train Model') {
           steps {
-             script {
+            script {
                sh '''
-                bash -c "source venv/bin/activate && python train.py"
-                mkdir -p ./app
-                MODEL_DIR=$(ls -td runs/detect/train* | head -1)
+                # Activate virtual environment and train model
+                 source venv/bin/activate
+                p   ython train.py
+
+                # Ensure the app directory exists
+                    mkdir -p ./app
+
+                # Get the latest trained model directory
+                    MODEL_DIR=$(ls -td runs/detect/train* | head -1)
                 echo "Latest Model Directory: $MODEL_DIR"
-                cp $MODEL_DIR/weights/best.pt ./app/best.pt
-              '''
-              }
-           }
-         }
+
+                # Copy best.pt to the project root
+                    cp $MODEL_DIR/weights/best.pt ./best.pt
+
+                # Verify if best.pt exists
+                 ls -lh ./best.pt
+                '''
+            }
+        }
+    }
         stage('Build Docker Image') {
              steps {
                   script {
