@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y \
 # Copy application files
 COPY app.py /app/
 COPY requirements.txt /app/
-COPY best.pt /app/best.pt  
+COPY best.pt /app/best.pt
+COPY templates/ /app/templates/
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
