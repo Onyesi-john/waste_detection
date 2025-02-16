@@ -4,14 +4,14 @@ pipeline {
     environment {
     DOCKER_IMAGE = 'latest'
     GITHUB_REGISTRY = 'ghcr.io'  // GitHub Container Registry
-    GITHUB_REPO = 'onyesi-john/waste_detect'  // Replace with your actual GitHub repository name
+    GITHUB_REPO = 'onyesi-john/waste_detection'  // Replace with your actual GitHub repository name
    }
 
 
     stages {
         stage('Clone Repository') {
             steps {
-               git branch: 'stage', url: 'https://github.com/Onyesi-john/mlops.git'
+               git branch: 'stage', url: 'https://github.com/Onyesi-john/waste_detection.git'
             }
         }
 
