@@ -4,27 +4,23 @@ FROM python:3.10
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for OpenCV
+# Install required system libraries
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0
 
-# Copy project files
+# Copy application files
 COPY app.py /app/
 COPY requirements.txt /app/
-
-# Copy the latest model (Jenkins ensures the correct file is here)
-COPY best.pt /app/best.pt
+COPY best.pt /app/best.pt  # Ensure best.pt is copied successfully
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-
 # Set model path as environment variable
 ENV MODEL_PATH="/app/best.pt"
 
-
-# Expose port (change based on your app)
+# Expose port
 EXPOSE 5000
 
 # Run the application
