@@ -19,7 +19,7 @@ pipeline {
             steps {
                 script {
                     // Set up the virtual environment and install dependencies
-                    sh '''
+                    sh '''#!/bin/bash
                         python3 -m venv venv
                         . venv/bin/activate
                         pip install --upgrade pip
@@ -32,7 +32,7 @@ pipeline {
         stage('Train Model') {
           steps {
             script {
-               sh '''
+               sh ''' #!/bin/bash
                 # Activate virtual environment and train model
                  source venv/bin/activate
                     python train.py
