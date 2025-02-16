@@ -34,6 +34,7 @@ pipeline {
              script {
                sh '''
                 bash -c "source venv/bin/activate && python train.py"
+                mkdir -p ./app
                 MODEL_DIR=$(ls -td runs/detect/train* | head -1)
                 echo "Latest Model Directory: $MODEL_DIR"
                 cp $MODEL_DIR/weights/best.pt ./app/best.pt
