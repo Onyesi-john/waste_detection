@@ -30,18 +30,17 @@ pipeline {
         }
 
         stage('Train Model') {
-           steps {
-              script {
-                     sh '''
-                         source venv/bin/activate
-                         python train.py
-                         MODEL_DIR=$(ls -td runs/detect/train* | head -1)
-                         echo "Latest Model Directory: $MODEL_DIR"
-                         cp $MODEL_DIR/weights/best.pt ./app/best.pt
-                    '''
-               }
-             }
+          steps {
+             script {
+               sh '''
+                bash -c "source venv/bin/activate && python train.py"
+                MODEL_DIR=$(ls -td runs/detect/train* | head -1)
+                echo "Latest Model Directory: $MODEL_DIR"
+                cp $MODEL_DIR/weights/best.pt ./app/best.pt
+              '''
+              }
            }
+         }
         stage('Build Docker Image') {
              steps {
                   script {
