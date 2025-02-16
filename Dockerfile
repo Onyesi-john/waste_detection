@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 # Copy application files
 COPY app.py /app/
 COPY requirements.txt /app/
-COPY best.pt /app/best.pt  # Ensure best.pt is copied successfully
+COPY best.pt /app/best.pt  
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
