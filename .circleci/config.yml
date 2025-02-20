@@ -25,34 +25,47 @@ jobs:
           command: git checkout dev-waste
 
   setup-python-env:
-    executor: python-executor
-    steps:
-      - checkout
-      - run:
-          name: Set Up Python Environment
-          command: |
-            python3 -m venv venv
-            source venv/bin/activate
-            pip install --upgrade pip
-            pip install -r requirements.txt
-            pip install gdown  # Install Google Drive downloader
+  executor: python-executor
+  steps:
+    - checkout
+    - run:
+        name: Set Up Python Environment
+        command: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install gdown  # Install Google Drive downloader
 
-      - run:
-          name: Download Dataset from Google Drive
-          command: |
-            mkdir -p dataset
-            if [ ! -d "dataset/valid" ]; then
-              echo "Downloading dataset from Google Drive..."
-              gdown --id 1BV-HLBtKluSgiwpPbAxv6Zh1lCAsZ1XO -O dataset.zip
-              unzip dataset.zip -d dataset
-              rm dataset.zip
-            fi
+    - run:
+        name: Download and Extract Dataset
+        command: |
+          mkdir -p dataset
+          if [ ! -d "dataset/valid" ]; then
+            echo "Downloading dataset from Google Drive..."
+            gdown --id 1BV-HLBtKluSgiwpPbAxv6Zh1lCAsZ1XO -O dataset.zip
+            unzip dataset.zip -d dataset
+            rm dataset.zip
+          else
+            echo "Dataset already exists. Skipping download."
+          fi
 
-      - persist_to_workspace:
-          root: ~/repo
-          paths:
-            - venv
-            - dataset
+    - run:
+        name: Verify Dataset Path in `data.yaml`
+        command: |
+          if [ -f "dataset/data.yaml" ]; then
+            echo "✅ data.yaml found!"
+            cat dataset/data.yaml
+          else
+            echo "❌ Error: data.yaml not found!"
+            exit 1
+          fi
+
+    - persist_to_workspace:
+        root: ~/repo
+        paths:
+          - venv
+          - dataset
 
   train-model:
     executor: python-executor
