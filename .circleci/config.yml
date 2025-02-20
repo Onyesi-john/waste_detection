@@ -32,18 +32,24 @@ jobs:
           name: Set Up Python Environment
           command: |
             python3 -m venv venv
-            . venv/bin/activate
+            source venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
+      - persist_to_workspace:
+          root: ~/repo
+          paths:
+            - venv
 
   train-model:
     executor: python-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/repo
       - run:
           name: Train Model
           command: |
-            . venv/bin/activate
+            source venv/bin/activate
             python train.py
             if [ -d "runs/detect" ]; then
               MODEL_DIR=$(ls -td runs/detect/train* 2>/dev/null | head -1)
