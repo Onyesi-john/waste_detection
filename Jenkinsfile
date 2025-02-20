@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'stage', url: 'https://github.com/Onyesi-john/waste_detection.git'
+                git branch: 'dev-waste', url: 'https://github.com/Onyesi-john/waste_detection.git'
             }
         }
 
