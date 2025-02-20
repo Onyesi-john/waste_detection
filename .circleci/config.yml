@@ -3,7 +3,7 @@ version: 2.1
 executors:
   python-executor:
     docker:
-      - image: circleci/python:3.8
+      - image: circleci/python:3.12
     working_directory: ~/repo
 
   docker-executor:
@@ -21,8 +21,8 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Check out dev-waste branch
-          command: git checkout stage
+          name: Check out the correct branch
+          command: git checkout dev-waste
 
   setup-python-env:
     executor: python-executor
@@ -35,10 +35,24 @@ jobs:
             source venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
+            pip install gdown  # Install Google Drive downloader
+
+      - run:
+          name: Download Dataset from Google Drive
+          command: |
+            mkdir -p dataset
+            if [ ! -d "dataset/valid" ]; then
+              echo "Downloading dataset from Google Drive..."
+              gdown --id 1BV-HLBtKluSgiwpPbAxv6Zh1lCAsZ1XO -O dataset.zip
+              unzip dataset.zip -d dataset
+              rm dataset.zip
+            fi
+
       - persist_to_workspace:
           root: ~/repo
           paths:
             - venv
+            - dataset
 
   train-model:
     executor: python-executor
