@@ -102,11 +102,13 @@ jobs:
           at: ~/project
       - setup_remote_docker
       - run:
-          name: Push to GitHub Container Registry
+          name: Login to GitHub Container Registry
           command: |
-            echo $GITHUB_TOKEN | docker login ghcr.io -u Onyesi-john --password-stdin
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u Onyesi-john --password-stdin
+      - run:
+          name: Push Docker Image
+          command: |
             docker push ghcr.io/onyesi-john/waste_detection:latest
-
   deploy_container:
     docker:
       - image: cimg/python:3.9
