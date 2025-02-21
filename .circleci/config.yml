@@ -20,31 +20,36 @@ jobs:
             . venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - .
 
-    train_model:
-     docker:
+  train_model:
+    docker:
       - image: cimg/python:3.9
-     steps:
+    steps:
       - checkout
+      - attach_workspace:
+          at: ~/project
       - run:
           name: Train Model
           command: |
-            python3 -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
-
+            
             # Ensure dataset directory exists
             mkdir -p /home/circleci/datasets/dataset
-
+            
             # Download and extract dataset
             python download_data.py
-
+            
             # Verify dataset location
             ls -R /home/circleci/datasets/dataset
-
+            
             # Train the model
             python train.py
-
+            
             # Locate trained model and copy to project root
             if [ -d "runs/detect" ]; then
               MODEL_DIR=$(ls -td runs/detect/train* 2>/dev/null | head -1)
@@ -59,11 +64,15 @@ jobs:
               echo "❌ Error: runs/detect directory does not exist!"
               exit 1
             fi
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - best.pt
 
-   build_docker_image:
-     docker:
+  build_docker_image:
+    docker:
       - image: cimg/python:3.9
-     steps:
+    steps:
       - checkout
       - attach_workspace:
           at: ~/project
@@ -79,11 +88,18 @@ jobs:
           name: Build Docker Image
           command: |
             docker build -t ghcr.io/onyesi-john/waste_detection:latest .
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - best.pt
+
   push_to_github_container_registry:
     docker:
       - image: cimg/python:3.9
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/project
       - setup_remote_docker
       - run:
           name: Push to GitHub Container Registry
