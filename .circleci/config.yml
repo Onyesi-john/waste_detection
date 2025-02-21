@@ -87,33 +87,33 @@ jobs:
       - run:
           name: Build Docker Image
           command: |
-            docker build -t ghcr.io/onyesi-john/waste_detection:latest .
+            docker build -t ghcr.io/$GH_USERNAME/waste_detection:latest .
       - persist_to_workspace:
           root: ~/project
           paths:
             - best.pt
 
   push_to_github_container_registry:
-  docker:
-    - image: cimg/python:3.9
-  steps:
-    - checkout
-    - attach_workspace:
-        at: ~/project
-    - setup_remote_docker
-    - run:
-        name: Install GitHub CLI
-        command: |
-          sudo apt update && sudo apt install -y gh
-    - run:
-        name: Authenticate with GitHub Container Registry
-        command: |
-          echo $GH_TOKEN | gh auth login --with-token
-          echo $GH_TOKEN | docker login ghcr.io -u $GH_USERNAME --password-stdin
-    - run:
-        name: Push Docker Image
-        command: |
-          docker push ghcr.io/$GH_USERNAME/waste_detection:latest
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/project
+      - setup_remote_docker
+      - run:
+          name: Install GitHub CLI
+          command: |
+            sudo apt update && sudo apt install -y gh
+      - run:
+          name: Authenticate with GitHub Container Registry
+          command: |
+            echo $GH_TOKEN | docker login ghcr.io -u $GH_USERNAME --password-stdin
+      - run:
+          name: Push Docker Image
+          command: |
+            docker push ghcr.io/$GH_USERNAME/waste_detection:latest
+
   deploy_container:
     docker:
       - image: cimg/python:3.9
@@ -125,8 +125,8 @@ jobs:
           command: |
             docker stop yolo-app || true
             docker rm yolo-app || true
-            docker pull ghcr.io/onyesi-john/waste_detection:latest
-            docker run -d -p 5000:5000 --name yolo-app ghcr.io/onyesi-john/waste_detection:latest
+            docker pull ghcr.io/$GH_USERNAME/waste_detection:latest
+            docker run -d -p 5000:5000 --name yolo-app ghcr.io/$GH_USERNAME/waste_detection:latest
 
 workflows:
   version: 2
