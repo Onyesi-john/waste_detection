@@ -60,21 +60,25 @@ jobs:
               exit 1
             fi
 
-  build_docker_image:
-    docker:
+   build_docker_image:
+     docker:
       - image: cimg/python:3.9
-    steps:
+     steps:
       - checkout
+      - attach_workspace:
+          at: ~/project
       - setup_remote_docker
+      - run:
+          name: Verify Model File
+          command: |
+            if [ ! -f "./best.pt" ]; then
+              echo "❌ Error: best.pt not found after training!"
+              exit 1
+            fi
       - run:
           name: Build Docker Image
           command: |
-            if [ ! -f "./best.pt" ]; then
-              echo "❌ Error: best.pt not found, training might have failed!"
-              exit 1
-            fi
             docker build -t ghcr.io/onyesi-john/waste_detection:latest .
-
   push_to_github_container_registry:
     docker:
       - image: cimg/python:3.9
