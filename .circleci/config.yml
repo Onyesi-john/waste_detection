@@ -1,0 +1,113 @@
+version: 2.1
+
+jobs:
+  clone_repository:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout:
+          path: ~/project
+
+  setup_python_environment:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: Set Up Python Environment
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+
+  train_model:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: Train Model
+          command: |
+            . venv/bin/activate
+            python train.py
+
+            if [ -d "runs/detect" ]; then
+              MODEL_DIR=$(ls -td runs/detect/train* 2>/dev/null | head -1)
+              if [ -n "$MODEL_DIR" ]; then
+                echo "Latest Model Directory: $MODEL_DIR"
+                cp $MODEL_DIR/weights/best.pt ./best.pt || { echo "Error: best.pt not found!"; exit 1; }
+              else
+                echo "Error: No training directory found!"
+                exit 1
+              fi
+            else
+              echo "Error: runs/detect directory does not exist!"
+              exit 1
+            fi
+
+            ls -lh ./best.pt
+
+  build_docker_image:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build Docker Image
+          command: |
+            if [ ! -f "./best.pt" ]; then
+              echo "Error: best.pt not found, training might have failed!"
+              exit 1
+            fi
+            docker build -t ${GITHUB_REGISTRY}/${GITHUB_REPO}:${DOCKER_IMAGE} .
+
+  push_to_github_container_registry:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Push to GitHub Container Registry
+          command: |
+            . venv/bin/activate
+            echo $GITHUB_TOKEN | docker login ghcr.io -u Onyesi-john --password-stdin
+            docker push ghcr.io/onyesi-john/waste_detection:latest
+
+  deploy_container:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Deploy Container
+          command: |
+            . venv/bin/activate
+            docker stop yolo-app || true
+            docker rm yolo-app || true
+            docker pull ghcr.io/onyesi-john/waste_detection:latest
+            docker run -d -p 5000:5000 --name yolo-app ghcr.io/onyesi-john/waste_detection:latest
+
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+      - clone_repository
+      - setup_python_environment:
+          requires:
+            - clone_repository
+      - train_model:
+          requires:
+            - setup_python_environment
+      - build_docker_image:
+          requires:
+            - train_model
+      - push_to_github_container_registry:
+          requires:
+            - build_docker_image
+      - deploy_container:
+          requires:
+            - push_to_github_container_registry
