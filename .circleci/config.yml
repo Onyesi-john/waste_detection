@@ -102,9 +102,9 @@ jobs:
           at: ~/project
       - setup_remote_docker
       - run:
-          name: Login to GitHub Container Registry
+          name: Authenticate with GitHub Container Registry using GitHub CLI
           command: |
-            echo "$GITHUB_TOKEN" | docker login ghcr.io -u Onyesi-john --password-stdin
+            echo | gh auth login --with-token <<< "$GITHUB_TOKEN"
       - run:
           name: Push Docker Image
           command: |
