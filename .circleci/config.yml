@@ -21,10 +21,10 @@ jobs:
             pip install --upgrade pip
             pip install -r requirements.txt
 
-train_model:
-    docker:
+  train_model:
+     docker:
       - image: cimg/python:3.9
-    steps:
+     steps:
       - checkout
       - run:
           name: Train Model
