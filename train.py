@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 
 # Load a smaller model (YOLOv5n instead of YOLOv8)
-model = YOLO("yolov5n.pt")  # Use YOLOv5 Nano model
+model = YOLO("yolov5nu.pt")  # Use YOLOv5 Nano model
 
 # Train the model with fewer epochs
 model.train(
