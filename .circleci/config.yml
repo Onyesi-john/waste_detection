@@ -29,6 +29,7 @@ jobs:
       - run:
           name: Train Model
           command: |
+             python -m venv venv
             . venv/bin/activate
             python train.py
 
