@@ -99,17 +99,16 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-        at: ~/project
+          at: ~/project
       - setup_remote_docker
-    - run:
-        name: Authenticate with GitHub Container Registry
-        command: |
-          echo $GH_TOKEN | docker login ghcr.io -u $GH_USERNAME --password-stdin
-    - run:
-        name: Push Docker Image
-        command: |
-          docker push ghcr.io/$GH_USERNAME/waste_detection:latest
-
+      - run:
+          name: Authenticate with GitHub Container Registry
+          command: |
+            echo $GH_TOKEN | docker login ghcr.io -u $GH_USERNAME --password-stdin
+      - run:
+          name: Push Docker Image
+          command: |
+            docker push ghcr.io/$GH_USERNAME/waste_detection:latest
 
   deploy_container:
     docker:
