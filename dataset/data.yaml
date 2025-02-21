@@ -1,6 +1,5 @@
-train: /home/john/waste_detection/dataset/train
-val: /home/john/waste_detection/dataset/valid
-
+train: /home/circleci/project/dataset/train/images
+val: /home/circleci/project/dataset/valid/images
 
 nc: 13
 names: ['banana', 'chilli', 'drinkcan', 'drinkpack', 'foodcan', 'lettuce', 'paperbag', 'plasticbag', 'plasticbottle', 'plasticcontainer', 'sweetpotato', 'teabag', 'tissueroll']
