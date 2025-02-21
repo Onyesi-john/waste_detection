@@ -22,9 +22,9 @@ jobs:
             pip install -r requirements.txt
 
   train_model:
-     docker:
+    docker:
       - image: cimg/python:3.9
-     steps:
+    steps:
       - checkout
       - run:
           name: Train Model
@@ -32,18 +32,34 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             pip install -r requirements.txt
-            
+
             # Ensure dataset directory exists
             mkdir -p /home/circleci/datasets/dataset
-            
-            # Download and extract dataset (modify based on your source)
+
+            # Download and extract dataset
             python download_data.py
-            
+
             # Verify dataset location
             ls -R /home/circleci/datasets/dataset
-            
-            # Train model
+
+            # Train the model
             python train.py
+
+            # Locate trained model and copy to project root
+            if [ -d "runs/detect" ]; then
+              MODEL_DIR=$(ls -td runs/detect/train* 2>/dev/null | head -1)
+              if [ -n "$MODEL_DIR" ]; then
+                echo "✅ Latest Model Directory: $MODEL_DIR"
+                cp $MODEL_DIR/weights/best.pt ./best.pt || { echo "❌ Error: best.pt not found!"; exit 1; }
+              else
+                echo "❌ Error: No training directory found!"
+                exit 1
+              fi
+            else
+              echo "❌ Error: runs/detect directory does not exist!"
+              exit 1
+            fi
+
   build_docker_image:
     docker:
       - image: cimg/python:3.9
@@ -54,10 +70,10 @@ jobs:
           name: Build Docker Image
           command: |
             if [ ! -f "./best.pt" ]; then
-              echo "Error: best.pt not found, training might have failed!"
+              echo "❌ Error: best.pt not found, training might have failed!"
               exit 1
             fi
-            docker build -t ${GITHUB_REGISTRY}/${GITHUB_REPO}:${DOCKER_IMAGE} .
+            docker build -t ghcr.io/onyesi-john/waste_detection:latest .
 
   push_to_github_container_registry:
     docker:
@@ -68,7 +84,6 @@ jobs:
       - run:
           name: Push to GitHub Container Registry
           command: |
-            . venv/bin/activate
             echo $GITHUB_TOKEN | docker login ghcr.io -u Onyesi-john --password-stdin
             docker push ghcr.io/onyesi-john/waste_detection:latest
 
@@ -81,7 +96,6 @@ jobs:
       - run:
           name: Deploy Container
           command: |
-            . venv/bin/activate
             docker stop yolo-app || true
             docker rm yolo-app || true
             docker pull ghcr.io/onyesi-john/waste_detection:latest
