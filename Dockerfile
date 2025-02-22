@@ -1,28 +1,24 @@
-# Use official Python image
-FROM python:3.10
+# Use an official lightweight Python image
+FROM python:3.9-slim
 
-# Set working directory
+# Set working directory inside container
 WORKDIR /app
 
-# Install required system libraries
-RUN apt-get update && apt-get install -y \
-    libgl1 \
-    libglib2.0-0
+# Install system dependencies for OpenCV
+RUN apt-get update && apt-get install -y libgl1
 
-# Copy application files
-COPY app.py /app/
-COPY requirements.txt /app/
-COPY best.pt /app/best.pt
-COPY templates/ /app/templates/
+# Copy all project files
+COPY . .
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-# Set model path as environment variable
-ENV MODEL_PATH="/app/best.pt"
+# Create uploads and processed directories
+RUN mkdir -p /app/uploads /app/processed
 
-# Expose port
+# Expose port for the application
 EXPOSE 5000
 
-# Run the application
+# Run the app
 CMD ["python", "app.py"]

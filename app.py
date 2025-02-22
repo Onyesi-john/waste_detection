@@ -7,9 +7,10 @@ from ultralytics import YOLO
 app = Flask(__name__)
 
 # Load trained YOLO model
-MODEL_PATH = "/app/best.pt"
+MODEL_PATH = "best.pt"  # Simple path since it's in the same directory
 model = YOLO(MODEL_PATH)
 
+# Create uploads and processed directories
 UPLOAD_FOLDER = "uploads"
 PROCESSED_FOLDER = "processed"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
