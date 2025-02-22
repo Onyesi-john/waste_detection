@@ -24,23 +24,36 @@ jobs:
           paths:
             - .
 
-  train_model:
-    docker:
-      - image: cimg/python:3.9
-    steps:
-      - checkout
-      - attach_workspace:
-          at: ~/project
-      - run:
-          name: Train Model
-          command: |
-            . venv/bin/activate
-            python train.py
-      - persist_to_workspace:
-          root: ~/project
-          paths:
-            - best.pt
+train_model:
+  docker:
+    - image: cimg/python:3.9
+  steps:
+    - checkout
+    - attach_workspace:
+        at: ~/project
+    - run:
+        name: Train Model
+        command: |
+          . venv/bin/activate
+          python train.py
 
+          # Debug: List files in the runs/detect/train directory
+          ls -l runs/detect/train
+
+          # Move best.pt to the root directory
+          mv runs/detect/train/weights/best.pt ./best.pt || { echo "❌ Error: best.pt not found!"; exit 1; }
+
+          # Debug: Verify best.pt exists in the root directory
+          if [ -f "./best.pt" ]; then
+            echo "✅ best.pt found in the root directory!"
+          else
+            echo "❌ Error: best.pt not found in the root directory!"
+            exit 1
+          fi
+    - persist_to_workspace:
+        root: ~/project
+        paths:
+          - best.pt
   build_and_push_docker_image:
     docker:
       - image: cimg/python:3.9
