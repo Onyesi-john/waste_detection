@@ -7,8 +7,8 @@ import shutil
 FILE_ID = "1BV-HLBtKluSgiwpPbAxv6Zh1lCAsZ1XO"
 OUTPUT_ZIP = "dataset.zip"
 
-# Define dataset path
-EXTRACT_PATH = "/home/circleci/datasets/dataset"
+# Define dataset path (relative to the current working directory)
+EXTRACT_PATH = "dataset"  # This will create a folder named 'dataset' in your current directory
 
 try:
     # Ensure the directory exists
