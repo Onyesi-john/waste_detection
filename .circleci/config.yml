@@ -32,6 +32,10 @@ jobs:
       - attach_workspace:
           at: ~/project
       - run:
+          name: Debug Dataset Directory
+          command: |
+            ls -R dataset  # Verify dataset structure
+      - run:
           name: Train Model
           command: |
             . venv/bin/activate
