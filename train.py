@@ -11,3 +11,7 @@ model.train(
     batch=8,  
     workers=2  
 )
+
+# Ensure the best.pt file is saved
+best_model_path = results.save("best.pt")
+print(f"Model saved to: {best_model_path}")
