@@ -42,7 +42,7 @@ def upload_image():
 
         return redirect(url_for("view_image", filename=file.filename))
 
-    return render_template("index.html")
+    return render_templates("index.html")
 
 
 # 📸 Route to View Processed Image
@@ -54,7 +54,7 @@ def view_image(filename):
 # 🎥 Route for Live Webcam Detection
 @app.route("/webcam")
 def webcam():
-    return render_template("webcam.html")
+    return render_templates("webcam.html")
 
 
 # 🎥 Start Real-Time Webcam Detection
