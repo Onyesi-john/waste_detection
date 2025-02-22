@@ -1,5 +1,6 @@
-train: /home/circleci/datasets/dataset/valid/images
-val:  /home/circleci/datasets/dataset/valid/images
+train: /home/circleci/datasets/dataset/train/images
+val: /home/circleci/datasets/dataset/valid/images
+
 
 
 nc: 13
