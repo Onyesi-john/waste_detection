@@ -63,13 +63,13 @@ jobs:
             echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
 
             # Build the Docker image
-            docker build -t $DOCKERHUB_USERNAME/waste_detection:dev-waste .
+            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest .
 
             # Verify the image was built
             docker images
 
             # Push the Docker image to Docker Hub
-            docker push $DOCKERHUB_USERNAME/waste_detection:dev-waste
+            docker push $DOCKERHUB_USERNAME/waste_detection:latest
 
 workflows:
   version: 2
