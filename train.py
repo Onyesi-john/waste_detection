@@ -12,6 +12,5 @@ model.train(
     workers=2  
 )
 
-# Ensure the best.pt file is saved
-best_model_path = results.save("best.pt")
-print(f"Model saved to: {best_model_path}")
+# The best model is automatically saved to runs/detect/train/weights/best.pt
+print("Training completed. Best model saved to runs/detect/train/weights/best.pt")
