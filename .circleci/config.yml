@@ -5,8 +5,7 @@ jobs:
     docker:
       - image: cimg/python:3.9
     steps:
-      - checkout:
-          path: ~/project
+      - checkout
 
   setup_python_environment:
     docker:
@@ -37,19 +36,19 @@ jobs:
           command: |
             . venv/bin/activate
             pip install -r requirements.txt
-            
+
             # Ensure dataset directory exists
             mkdir -p /home/circleci/datasets/dataset
-            
+
             # Download and extract dataset
             python download_data.py
-            
+
             # Verify dataset location
             ls -R /home/circleci/datasets/dataset
-            
+
             # Train the model
             python train.py
-            
+
             # Locate trained model and copy to project root
             if [ -d "runs/detect" ]; then
               MODEL_DIR=$(ls -td runs/detect/train* 2>/dev/null | head -1)
@@ -87,13 +86,13 @@ jobs:
       - run:
           name: Build Docker Image
           command: |
-            docker build -t ghcr.io/$GH_USERNAME/waste_detection:latest .
+            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest .
       - persist_to_workspace:
           root: ~/project
           paths:
             - best.pt
 
-  push_to_github_container_registry:
+  push_to_docker_hub:
     docker:
       - image: cimg/python:3.9
     steps:
@@ -102,13 +101,13 @@ jobs:
           at: ~/project
       - setup_remote_docker
       - run:
-          name: Authenticate with GitHub Container Registry
+          name: Authenticate with Docker Hub
           command: |
-            echo $GH_TOKEN | docker login ghcr.io -u $GH_USERNAME --password-stdin
+            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
       - run:
-          name: Push Docker Image
+          name: Push Docker Image to Docker Hub
           command: |
-            docker push ghcr.io/$GH_USERNAME/waste_detection:latest
+            docker push $DOCKERHUB_USERNAME/waste_detection:latest
 
   deploy_container:
     docker:
@@ -121,8 +120,8 @@ jobs:
           command: |
             docker stop yolo-app || true
             docker rm yolo-app || true
-            docker pull ghcr.io/$GH_USERNAME/waste_detection:latest
-            docker run -d -p 5000:5000 --name yolo-app ghcr.io/$GH_USERNAME/waste_detection:latest
+            docker pull $DOCKERHUB_USERNAME/waste_detection:latest
+            docker run -d -p 5000:5000 --name yolo-app $DOCKERHUB_USERNAME/waste_detection:latest
 
 workflows:
   version: 2
@@ -138,9 +137,9 @@ workflows:
       - build_docker_image:
           requires:
             - train_model
-      - push_to_github_container_registry:
+      - push_to_docker_hub:
           requires:
             - build_docker_image
       - deploy_container:
           requires:
-            - push_to_github_container_registry
+            - push_to_docker_hub
