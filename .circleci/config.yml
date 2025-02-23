@@ -5,13 +5,15 @@ jobs:
     docker:
       - image: cimg/python:3.9
     steps:
-      - checkout
+      - checkout:
+          branch: dev-waste  # Explicitly specify the branch
 
   setup_python_environment:
     docker:
       - image: cimg/python:3.9
     steps:
-      - checkout
+      - checkout:
+          branch: dev-waste  # Explicitly specify the branch
       - run:
           name: Set Up Python Environment
           command: |
@@ -28,12 +30,14 @@ jobs:
     docker:
       - image: cimg/python:3.9
     steps:
-      - checkout
+      - checkout:
+          branch: dev-waste  # Explicitly specify the branch
       - attach_workspace:
           at: ~/project
       - run:
           name: Debug Dataset Directory
           command: |
+            echo "Current Working Directory: $(pwd)"
             ls -R dataset  # Verify dataset structure
 
             # Ensure data.yaml is in the dataset folder
@@ -44,18 +48,19 @@ jobs:
 
             # Verify after moving
             ls -l dataset/
+            cat dataset/data.yaml
       - run:
           name: Train Model
           command: |
             . venv/bin/activate
             python train.py
 
-
   build_and_push_docker_image:
     docker:
       - image: cimg/python:3.9
     steps:
-      - checkout
+      - checkout:
+          branch: dev-waste  # Explicitly specify the branch
       - attach_workspace:
           at: ~/project
       - setup_remote_docker
@@ -69,25 +74,15 @@ jobs:
       - run:
           name: Authenticate with Docker Hub
           command: |
-            # Debug: Verify environment variables
             echo "DOCKERHUB_USERNAME: $DOCKERHUB_USERNAME"
             echo "DOCKERHUB_PASSWORD: $DOCKERHUB_PASSWORD"
-
-            # Authenticate with Docker Hub
             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-
-            # Debug: Verify Docker login
             docker info
       - run:
           name: Build and Push Docker Image
           command: |
-            # Build the Docker image
             docker build -t $DOCKERHUB_USERNAME/waste_detection:latest .
-
-            # Verify the image was built
             docker images
-
-            # Push the Docker image to Docker Hub
             docker push $DOCKERHUB_USERNAME/waste_detection:latest
 
 workflows:
