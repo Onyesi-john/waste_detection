@@ -5,15 +5,19 @@ jobs:
     docker:
       - image: cimg/python:3.9
     steps:
-      - checkout:
-          branch: dev-waste  # Explicitly specify the branch
+      - checkout
+      - run:
+          name: Switch to dev-waste branch
+          command: git checkout dev-waste
 
   setup_python_environment:
     docker:
       - image: cimg/python:3.9
     steps:
-      - checkout:
-          branch: dev-waste  # Explicitly specify the branch
+      - checkout
+      - run:
+          name: Switch to dev-waste branch
+          command: git checkout dev-waste
       - run:
           name: Set Up Python Environment
           command: |
@@ -30,8 +34,10 @@ jobs:
     docker:
       - image: cimg/python:3.9
     steps:
-      - checkout:
-          branch: dev-waste  # Explicitly specify the branch
+      - checkout
+      - run:
+          name: Switch to dev-waste branch
+          command: git checkout dev-waste
       - attach_workspace:
           at: ~/project
       - run:
@@ -59,8 +65,10 @@ jobs:
     docker:
       - image: cimg/python:3.9
     steps:
-      - checkout:
-          branch: dev-waste  # Explicitly specify the branch
+      - checkout
+      - run:
+          name: Switch to dev-waste branch
+          command: git checkout dev-waste
       - attach_workspace:
           at: ~/project
       - setup_remote_docker
