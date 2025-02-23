@@ -5,7 +5,7 @@ model = YOLO("yolov5nu.pt")
 
 # Train the model
 model.train(
-    data="dataset/data.yaml",  # Relative path to data.yaml
+    data="/home/circleci/datasets/dataset/data.yaml",  # Relative path to data.yaml
     epochs=15,
     imgsz=416,
     batch=8,
