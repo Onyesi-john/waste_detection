@@ -25,6 +25,7 @@ jobs:
             . venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
+            pip install gdown  # Install gdown for downloading from Google Drive
       - persist_to_workspace:
           root: ~/project
           paths:
@@ -40,6 +41,13 @@ jobs:
           command: git checkout dev-waste
       - attach_workspace:
           at: ~/project
+      - run:
+          name: Download Dataset from Google Drive
+          command: |
+            . venv/bin/activate
+            gdown "https://drive.google.com/file/d/1mrujZFCNXstsKdO6gZ7XyTPTIP6ZqYjW/view?usp=sharing" -O dataset.zip  # Replace with your Google Drive link
+            unzip dataset.zip -d dataset  # Unzip the dataset
+            rm dataset.zip  # Remove the zip file after extraction
       - run:
           name: Debug Dataset Directory
           command: |
