@@ -45,7 +45,9 @@ jobs:
           name: Download Dataset from Google Drive
           command: |
             . venv/bin/activate
-            gdown "https://drive.google.com/file/d/1mrujZFCNXstsKdO6gZ7XyTPTIP6ZqYjW/view?usp=sharing" -O dataset.zip  # Replace with your Google Drive link
+            gdown "https://drive.google.com/uc?id=1mrujZFCNXstsKdO6gZ7XyTPTIP6ZqYjW" -O dataset.zip  # Use the direct download link
+            file dataset.zip  # Debug: Check the file type
+            ls -lh dataset.zip  # Debug: Check the file size
             unzip dataset.zip -d dataset  # Unzip the dataset
             rm dataset.zip  # Remove the zip file after extraction
       - run:
