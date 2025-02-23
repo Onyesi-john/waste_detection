@@ -48,7 +48,7 @@ jobs:
             gdown "https://drive.google.com/uc?id=1mrujZFCNXstsKdO6gZ7XyTPTIP6ZqYjW" -O dataset.zip  # Use the direct download link
             file dataset.zip  # Debug: Check the file type
             ls -lh dataset.zip  # Debug: Check the file size
-            unzip dataset.zip -d dataset  # Unzip the dataset
+            unzip -o dataset.zip -d dataset  # Use -o to overwrite files without prompting
             rm dataset.zip  # Remove the zip file after extraction
       - run:
           name: Debug Dataset Directory
