@@ -1,6 +1,5 @@
-train: dataset/train
-val: dataset/valid
-
+train: /home/circleci/datasets/dataset/train/images
+val: /home/circleci/datasets/dataset/valid/images
 nc: 13
 names: ['banana', 'chilli', 'drinkcan', 'drinkpack', 'foodcan', 'lettuce', 'paperbag', 'plasticbag', 'plasticbottle', 'plasticcontainer', 'sweetpotato', 'teabag', 'tissueroll']
 

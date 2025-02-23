@@ -8,7 +8,7 @@ FILE_ID = "1BV-HLBtKluSgiwpPbAxv6Zh1lCAsZ1XO"
 OUTPUT_ZIP = "dataset.zip"
 
 # Define dataset path (use the project directory)
-EXTRACT_PATH = "/home/circleci/project/dataset"  # Write to the project directory
+EXTRACT_PATH = "/home/circleci/datasets"  # Write to the project directory
 
 try:
     # Ensure the directory exists
