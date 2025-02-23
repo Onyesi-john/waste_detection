@@ -1,5 +1,5 @@
-train: /home/john/waste_detection/dataset/train
-val: /home/john/waste_detection/dataset/valid
+train: /home/john/waste_detection/dataset/train/images
+val: /home/john/waste_detection/dataset/valid/images
 
 
 nc: 13
