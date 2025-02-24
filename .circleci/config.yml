@@ -71,25 +71,19 @@ jobs:
               exit 1
             fi
       - run:
-          name: Set Up Environment Variables
-          command: |
-            export USERNAME="$DOCKERHUB_USERNAME"
-            export PASSWORD="$DOCKERHUB_PASSWORD"
-
-      - run:
           name: Build and Push Docker Image
           command: |
-            # Authenticate with Docker Hub
-            echo "$PASSWORD" | docker login -u "$USERNAME" --password-stdin || { echo "❌ Docker login failed!"; exit 1; }
+            # Authenticate with Docker Hub (No TTY issue)
+            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin || { echo "❌ Docker login failed!"; exit 1; }
 
             # Build the Docker image
-            docker build -t $USERNAME/waste_detection:latest . || { echo "❌ Docker build failed!"; exit 1; }
+            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest . || { echo "❌ Docker build failed!"; exit 1; }
 
             # Verify the image was built
             docker images
 
             # Push the Docker image to Docker Hub
-            docker push $USERNAME/waste_detection:latest || { echo "❌ Docker push failed!"; exit 1; }
+            docker push $DOCKERHUB_USERNAME/waste_detection:latest || { echo "❌ Docker push failed!"; exit 1; }
 
 workflows:
   version: 2
