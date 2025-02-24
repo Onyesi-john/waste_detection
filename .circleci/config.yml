@@ -3,13 +3,13 @@ version: 2.1
 jobs:
   clone_repository:
     docker:
-      - image: python:3.9-slim  # ✅ Using a lightweight Python image
+      - image: python:3.9-slim  
     steps:
       - checkout
 
   setup_python_environment:
     docker:
-      - image: python:3.9-slim  # ✅ Slim Python image for efficiency
+      - image: python:3.9-slim  
     steps:
       - checkout
       - run:
@@ -27,7 +27,7 @@ jobs:
 
   train_model:
     docker:
-      - image: python:3.9-slim  # ✅ Lightweight training environment
+      - image: python:3.9-slim  
     steps:
       - checkout
       - attach_workspace:
@@ -42,13 +42,13 @@ jobs:
             ls -l runs/detect/train
 
             # Move best.pt to the root directory
-            mv runs/detect/train/weights/best.pt ./best.pt || { echo "❌ Error: best.pt not found!"; exit 1; }
+            mv runs/detect/train/weights/best.pt ./best.pt || { echo " Error: best.pt not found!"; exit 1; }
 
             # Debug: Verify best.pt exists in the root directory
             if [ -f "./best.pt" ]; then
-              echo "✅ best.pt found in the root directory!"
+              echo "best.pt found in the root directory!"
             else
-              echo "❌ Error: best.pt not found in the root directory!"
+              echo " Error: best.pt not found in the root directory!"
               exit 1
             fi
       - persist_to_workspace:
@@ -58,7 +58,7 @@ jobs:
 
   build_and_push_docker_image:
     docker:
-      - image: docker:latest  # ✅ Using a minimal Docker image for builds
+      - image: docker:latest  
     steps:
       - checkout
       - attach_workspace:
@@ -67,7 +67,7 @@ jobs:
       - run:
           name: Authenticate with Docker Hub
           command: |
-            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin 2>/dev/null || { echo "❌ Docker login failed!"; exit 1; }
+            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin 2>/dev/null || { echo "Docker login failed!"; exit 1; }
       - run:
           name: Build and Push Docker Image
           command: |
