@@ -6,6 +6,9 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - checkout
+      - run:
+          name: Switch to dev-waste branch
+          command: git checkout dev-waste
 
   setup_python_environment:
     docker:
@@ -13,12 +16,16 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Switch to dev-waste branch
+          command: git checkout dev-waste
+      - run:
           name: Set Up Python Environment
           command: |
             python3 -m venv venv
             . venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
+            pip install gdown  # Install gdown for downloading from Google Drive
       - persist_to_workspace:
           root: ~/project
           paths:
@@ -29,70 +36,31 @@ jobs:
       - image: cimg/python:3.9
     steps:
       - checkout
+      - run:
+          name: Switch to dev-waste branch
+          command: git checkout dev-waste
       - attach_workspace:
           at: ~/project
+      - run:
+          name: Download Dataset from Google Drive
+          command: |
+            . venv/bin/activate
+            gdown "https://drive.google.com/uc?id=1mrujZFCNXstsKdO6gZ7XyTPTIP6ZqYjW" -O dataset.zip  # Use the direct download link
+            file dataset.zip  # Debug: Check the file type
+            ls -lh dataset.zip  # Debug: Check the file size
+            unzip -o dataset.zip -d dataset  # Use -o to overwrite files without prompting
+            rm dataset.zip  # Remove the zip file after extraction
+      - run:
+          name: Debug Dataset Directory
+          command: |
+            echo "Current Working Directory: $(pwd)"
+            ls -R dataset  # Verify dataset structure
+            cat dataset/data.yaml  # Verify data.yaml content
       - run:
           name: Train Model
           command: |
             . venv/bin/activate
             python train.py
-
-            # Debug: List files in the runs/detect/train directory
-            ls -l runs/detect/train
-
-            # Move best.pt to the root directory
-            mv runs/detect/train/weights/best.pt ./best.pt || { echo "❌ Error: best.pt not found!"; exit 1; }
-
-            # Debug: Verify best.pt exists in the root directory
-            if [ -f "./best.pt" ]; then
-              echo "✅ best.pt found in the root directory!"
-            else
-              echo "❌ Error: best.pt not found in the root directory!"
-              exit 1
-            fi
-      - persist_to_workspace:
-          root: ~/project
-          paths:
-            - best.pt
-
-  build_and_push_docker_image:
-    docker:
-      - image: cimg/python:3.9
-    steps:
-      - checkout
-      - attach_workspace:
-          at: ~/project
-      - setup_remote_docker
-      - run:
-          name: Verify Model File
-          command: |
-            if [ ! -f "./best.pt" ]; then
-              echo "❌ Error: best.pt not found after training!"
-              exit 1
-            fi
-      - run:
-          name: Authenticate with Docker Hub
-          command: |
-            # Debug: Verify environment variables
-            echo "DOCKERHUB_USERNAME: $DOCKERHUB_USERNAME"
-            echo "DOCKERHUB_PASSWORD: $DOCKERHUB_PASSWORD"
-
-            # Authenticate with Docker Hub
-            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-
-            # Debug: Verify Docker login
-            docker info
-      - run:
-          name: Build and Push Docker Image
-          command: |
-            # Build the Docker image
-            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest .
-
-            # Verify the image was built
-            docker images
-
-            # Push the Docker image to Docker Hub
-            docker push $DOCKERHUB_USERNAME/waste_detection:latest
 
 workflows:
   version: 2
@@ -105,6 +73,3 @@ workflows:
       - train_model:
           requires:
             - setup_python_environment
-      - build_and_push_docker_image:
-          requires:
-            - train_model
