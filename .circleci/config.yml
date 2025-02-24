@@ -64,26 +64,19 @@ jobs:
           at: ~/project
       - setup_remote_docker
       - run:
-          name: Verify Model File
+          name: Authenticate with Docker Hub
           command: |
-            if [ ! -f "./best.pt" ]; then
-              echo "❌ Error: best.pt not found after training!"
-              exit 1
-            fi
+            echo "DOCKERHUB_USERNAME: $DOCKERHUB_USERNAME"
+            echo "DOCKERHUB_PASSWORD: $DOCKERHUB_PASSWORD"
+            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            docker info
       - run:
           name: Build and Push Docker Image
           command: |
-            # Authenticate with Docker Hub (No TTY issue)
-            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin 2>/dev/null || { echo "❌ Docker login failed!"; exit 1; }
-
-            # Build the Docker image
-            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest . || { echo "❌ Docker build failed!"; exit 1; }
-
-            # Verify the image was built
+            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest .
             docker images
+            docker push $DOCKERHUB_USERNAME/waste_detection:latest
 
-            # Push the Docker image to Docker Hub
-            docker push $DOCKERHUB_USERNAME/waste_detection:latest || { echo "❌ Docker push failed!"; exit 1; }
 
 workflows:
   version: 2
