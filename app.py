@@ -44,7 +44,7 @@ def upload_image():
         results = model(filepath)
 
         # Save processed image
-        results[0].save(save_dir=PROCESSED_FOLDER)  
+        results[0].save(PROCESSED_FOLDER)  
 
         return redirect(url_for("view_image", filename=file.filename))
 
