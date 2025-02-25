@@ -1,8 +1,8 @@
 import sys, os, subprocess
-from wasteDetection.utils.main_utils import decodeImage, encodeImageIntoBase64
+from waste_detection.utils.main_utils import decodeImage, encodeImageIntoBase64
 from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS, cross_origin
-from wasteDetection.constant.application import APP_HOST, APP_PORT
+from waste_detection.constant.application import APP_HOST, APP_PORT
 
 app = Flask(__name__)
 CORS(app)
