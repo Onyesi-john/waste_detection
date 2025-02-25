@@ -1,89 +1,82 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
-import os
-import cv2
-import torch
-import threading
-from ultralytics import YOLO
+import sys, os, subprocess
+from wasteDetection.utils.main_utils import decodeImage, encodeImageIntoBase64
+from flask import Flask, request, jsonify, render_template, Response
+from flask_cors import CORS, cross_origin
+from wasteDetection.constant.application import APP_HOST, APP_PORT
 
 app = Flask(__name__)
+CORS(app)
 
-# Load YOLO model
-MODEL_PATH = "/app/best.pt"  # Update this for Docker compatibility
-model = YOLO(MODEL_PATH)
+class ClientApp:
+    def __init__(self):
+        self.filename = "/app/inputImage.jpg"  # Ensure correct path inside Docker
+        self.model_path = "/app/yolov5nu/best.pt"  # Model location in Docker
 
-# Create folders
-UPLOAD_FOLDER = "uploads"
-PROCESSED_FOLDER = "processed"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(PROCESSED_FOLDER, exist_ok=True)
+clApp = ClientApp()
 
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["PROCESSED_FOLDER"] = PROCESSED_FOLDER
-
-# Allowed file types for uploads
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
-
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-# 🖼️ Upload & Process Image
-@app.route("/", methods=["GET", "POST"])
-def upload_image():
-    if request.method == "POST":
-        file = request.files.get("file")
-        if not file or file.filename == "":
-            return "❌ No file uploaded!"
-        if not allowed_file(file.filename):
-            return "❌ Invalid file type! Upload PNG, JPG, or JPEG only."
-
-        filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
-        file.save(filepath)
-
-        # Run YOLO detection
-        results = model(filepath)
-
-        # Save processed image
-        results[0].save(PROCESSED_FOLDER)  
-
-        return redirect(url_for("view_image", filename=file.filename))
-
+@app.route("/")
+def home():
     return render_template("index.html")
 
-
-# 📸 View Processed Image
-@app.route("/processed/<filename>")
-def view_image(filename):
-    return send_from_directory(app.config["PROCESSED_FOLDER"], filename)
-
-
-# 🎥 Webcam Detection
-def detect_webcam():
-    cap = cv2.VideoCapture(0)
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+@app.route("/predict", methods=['POST', 'GET'])
+@cross_origin()
+def predictRoute():
+    try:
+        image = request.json.get('image')
+        if not image:
+            return Response("❌ No image provided!", status=400)
         
-        results = model(frame)
-        frame = results[0].plot()
+        decodeImage(image, clApp.filename)
 
-        cv2.imshow("YOLO Real-Time Detection", frame)
+        # Run YOLO detection using subprocess
+        yolo_command = [
+            "python", "yolov5nu/detect.py",
+            "--weights", clApp.model_path,
+            "--img", "416",
+            "--conf", "0.5",
+            "--source", clApp.filename
+        ]
 
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
+        result = subprocess.run(yolo_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    cap.release()
-    cv2.destroyAllWindows()
+        if result.returncode != 0:
+            return Response(f"❌ YOLOv5 Error:\n{result.stderr}", status=500)
 
+        processed_image_path = "yolov5nu/runs/detect/exp/inputImage.jpg"
+        if not os.path.exists(processed_image_path):
+            return Response("❌ Processed image not found!", status=500)
 
-# 🔗 Start Webcam Detection (Background Thread)
-@app.route("/start_webcam")
-def start_webcam():
-    thread = threading.Thread(target=detect_webcam)
-    thread.start()
-    return "Webcam detection started!"
+        opencodedbase64 = encodeImageIntoBase64(processed_image_path)
+        result = {"image": opencodedbase64.decode('utf-8')}
 
+        # Only remove files inside the runs directory, don't delete everything
+        subprocess.run(["rm", "-rf", "yolov5nu/runs/detect/exp"], check=True)
+
+    except KeyError:
+        return Response("❌ Key error: Incorrect key passed", status=400)
+    except Exception as e:
+        return Response(f"❌ Unexpected Error: {str(e)}", status=500)
+
+    return jsonify(result)
+
+@app.route("/live", methods=['GET'])
+@cross_origin()
+def predictLive():
+    try:
+        subprocess.run([
+            "python", "yolov5nu/detect.py",
+            "--weights", clApp.model_path,
+            "--img", "416",
+            "--conf", "0.5",
+            "--source", "0"
+        ], check=True)
+
+        subprocess.run(["rm", "-rf", "yolov5nu/runs/detect/exp"], check=True)
+
+        return "✅ Camera detection started!"
+
+    except Exception as e:
+        return Response(f"❌ Error starting webcam: {str(e)}", status=500)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host=APP_HOST, port=APP_PORT)
