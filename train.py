@@ -14,3 +14,4 @@ model.train(
 
 # The best model is automatically saved to runs/detect/train/weights/best.pt
 print("Training completed. Best model saved to runs/detect/train/weights/best.pt")
+
