@@ -4,7 +4,8 @@ import yaml
 import base64
 
 from waste_detection.exception import AppException
-from waste_detection.logger import logging
+from waste_detection.logger import logger
+
 
 
 def read_yaml_file(file_path: str) -> dict:
