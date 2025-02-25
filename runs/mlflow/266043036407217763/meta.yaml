@@ -1,0 +1,6 @@
+artifact_location: /home/john/waste_detection/runs/mlflow/266043036407217763
+creation_time: 1740495039606
+experiment_id: '266043036407217763'
+last_update_time: 1740495039606
+lifecycle_stage: active
+name: ./yolo5nu
