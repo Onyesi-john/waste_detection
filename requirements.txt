@@ -1,8 +1,7 @@
 
 Flask
 flask-cors
-numpy
-opencv-python
+opencv-python --headless
 torch
 torchvision
 ultralytics
