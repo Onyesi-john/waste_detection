@@ -1,33 +1,22 @@
-# Use a lightweight Python image
+# Use an official Python runtime as the base image
 FROM python:3.9-slim
+
+# Install system dependencies (including nano)
+RUN apt-get update && apt-get install -y \
+    nano \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
 WORKDIR /app
 
-# Install system dependencies for OpenCV
-RUN apt-get update && apt-get install -y \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgstreamer1.0-0 \
-    libgstreamer-plugins-base1.0-dev \
-    && rm -rf /var/lib/apt/lists/*  # Clean up to reduce image size
-
-# Copy requirements first to optimize Docker layer caching
-COPY requirements.txt /app/requirements.txt
+# Copy the requirements file
+COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the trained model
-COPY best.pt /app/best.pt
+# Copy the entire project directory into the container
+COPY . .
 
-# Copy the rest of the application code
-COPY . /app
-
-# Expose port (if needed for a web app)
-EXPOSE 5000
-
-# Set the default command
+# Run the application
 CMD ["python", "app.py"]
