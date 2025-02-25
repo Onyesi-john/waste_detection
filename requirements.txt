@@ -1,7 +1,12 @@
-ultralytics
-torch
+
+Flask
+flask-cors
+numpy
 opencv-python
-fastapi
-uvicorn
+torch
+torchvision
+ultralytics
+Pillow
+requests
+scipy
 gdown
-flask
