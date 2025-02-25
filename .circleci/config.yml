@@ -3,59 +3,40 @@ version: 2.1
 jobs:
   clone_repository:
     docker:
-      - image: python:3.9
+      - image: cimg/python:3.9
     steps:
       - checkout
 
   setup_python_environment:
     docker:
-      - image: python:3.9
+      - image: cimg/python:3.9  
     steps:
       - checkout
-      - run:
-          name: Install system dependencies
-          command: |
-            apt-get update && apt-get install -y \
-              python3-venv \
-              libgl1-mesa-glx \
-              libglib2.0-0 \
-              ffmpeg \
-              libsm6 \
-              libxrender1 \
-              libxext6
+      
       - run:
           name: Set Up Python Environment
           command: |
-            python3 -m venv /home/john/waste_detection/venv
-            . /home/john/waste_detection/venv/bin/activate
+            apt-get update && apt-get install -y python3-venv   # Ensure venv is available
+            python3 -m venv venv
+            . venv/bin/activate
             pip install --upgrade pip
-            pip install -r /home/john/waste_detection/requirements.txt
+            pip install -r requirements.txt
       - persist_to_workspace:
-          root: /home/john/waste_detection
+          root: ~/project
           paths:
             - .
 
   train_model:
     docker:
-      - image: python:3.9
+      - image: cimg/python:3.9 
     steps:
       - checkout
       - attach_workspace:
-          at: /home/john/waste_detection
-      - run:
-          name: Install system dependencies
-          command: |
-            apt-get update && apt-get install -y \
-              libgl1-mesa-glx \
-              libglib2.0-0 \
-              ffmpeg \
-              libsm6 \
-              libxrender1 \
-              libxext6
+          at: ~/project
       - run:
           name: Train Model
           command: |
-            cd /home/john/waste_detection
+            cd ~/project
             . venv/bin/activate
             python train.py
 
@@ -73,17 +54,17 @@ jobs:
               exit 1
             fi
       - persist_to_workspace:
-          root: /home/john/waste_detection
+          root: ~/project
           paths:
             - best.pt
 
   build_and_push_docker_image:
     docker:
-      - image: docker:latest
+      - image: docker:latest  
     steps:
       - checkout
       - attach_workspace:
-          at: /home/john/waste_detection
+          at: ~/project
       - setup_remote_docker
       - run:
           name: Authenticate with Docker Hub
@@ -92,7 +73,7 @@ jobs:
       - run:
           name: Build and Push Docker Image
           command: |
-            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest /home/john/waste_detection
+            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest .
             docker images
             docker push $DOCKERHUB_USERNAME/waste_detection:latest
 
