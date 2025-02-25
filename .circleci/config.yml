@@ -16,13 +16,14 @@ jobs:
       - run:
           name: Set Up Python Environment
           command: |
-            apt-get update && apt-get install -y python3-venv   # Ensure venv is available
+            apt-get update && apt-get install -y python3-venv  
             python3 -m venv venv
             . venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
+
       - persist_to_workspace:
-          root: ~/project
+          root: /home/john/waste_detection
           paths:
             - .
 
@@ -68,13 +69,14 @@ jobs:
           root: /home/john/waste_detection
           paths:
             - best.pt
+
   build_and_push_docker_image:
     docker:
       - image: docker:latest  
     steps:
       - checkout
       - attach_workspace:
-          at: ~/project
+          at: /home/john/waste_detection
       - setup_remote_docker
       - run:
           name: Authenticate with Docker Hub
@@ -83,6 +85,7 @@ jobs:
       - run:
           name: Build and Push Docker Image
           command: |
+            cd /home/john/waste_detection
             docker build -t $DOCKERHUB_USERNAME/waste_detection:latest .
             docker images
             docker push $DOCKERHUB_USERNAME/waste_detection:latest
