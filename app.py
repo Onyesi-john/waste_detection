@@ -9,7 +9,7 @@ CORS(app)
 
 class ClientApp:
     def __init__(self):
-        self.filename = "/app/inputImage.jpg"  # Ensure correct path inside Docker
+        self.filename = "/app/inputImage.jpg"  # Ensure correct path inside Dockers
         self.model_path = "/app/yolov5nu/best.pt"  # Model  location in Docker
 
 clApp = ClientApp()
