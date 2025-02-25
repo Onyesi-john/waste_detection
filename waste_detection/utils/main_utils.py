@@ -4,7 +4,7 @@ import yaml
 import base64
 
 from waste_detection.exception import AppException
-from waste_detection.logger import logger
+from waste_detection.logger import logging
 
 
 
