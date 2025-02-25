@@ -28,15 +28,26 @@ jobs:
 
   train_model:
     docker:
-      - image: cimg/python:3.9 
+      - image: cimg/python:3.9
     steps:
       - checkout
       - attach_workspace:
-          at: ~/project
+          at: /home/john/waste_detection
       - run:
-          name: Train Model
+          name: Install system dependencies
           command: |
-            cd ~/project
+            apt-get update && apt-get install -y \
+              libgl1-mesa-glx \
+              libglib2.0-0 \
+              ffmpeg \
+              libsm6 \
+              libxrender1 \
+              libxext6
+      - run:
+          name: Create Directory and Train Model
+          command: |
+            mkdir -p /home/john/waste_detection
+            cd /home/john/waste_detection
             . venv/bin/activate
             python train.py
 
@@ -54,10 +65,9 @@ jobs:
               exit 1
             fi
       - persist_to_workspace:
-          root: ~/project
+          root: /home/john/waste_detection
           paths:
             - best.pt
-
   build_and_push_docker_image:
     docker:
       - image: docker:latest  
