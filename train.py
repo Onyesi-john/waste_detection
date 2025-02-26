@@ -13,7 +13,7 @@ model = YOLO(model_path) if os.path.exists(model_path) else YOLO("/home/john/mod
 
 # Train the model
 model.train(
-    data="data.yaml",
+    data="dataset/data.yaml",
     epochs=50,
     imgsz=416,
     batch=8,
