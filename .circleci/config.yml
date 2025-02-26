@@ -16,7 +16,6 @@ jobs:
       - run:
           name: Set Up Python Environment
           command: |
-            cd waste_detection  # Move inside the cloned repo
             apt-get update && apt-get install -y python3-venv  
             python3 -m venv venv
             . venv/bin/activate
@@ -39,15 +38,14 @@ jobs:
       - run:
           name: Train Model
           command: |
-            cd waste_detection  # Ensure training happens inside the repo
             . venv/bin/activate
             python train.py
 
       - run:
           name: Ensure Best Model Exists
           command: |
-            ls -lah waste_detection/runs/train/exp/weights/
-            if [ ! -f waste_detection/runs/train/exp/weights/best.pt ]; then
+            ls -lah runs/train/exp/weights/
+            if [ ! -f runs/train/exp/weights/best.pt ]; then
               echo "Training failed: best.pt not found!"
               exit 1
             fi
@@ -55,7 +53,7 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - waste_detection/runs/train/exp/weights/best.pt  # Persist the trained model
+            - runs/train/exp/weights/best.pt  # Persist the trained model
 
   build_and_push_docker_image:
     docker:
@@ -73,7 +71,7 @@ jobs:
           name: Move Best Model to Docker Build Context
           command: |
             mkdir -p docker_model
-            cp waste_detection/runs/train/exp/weights/best.pt docker_model/  # Copy best.pt for Docker
+            cp runs/train/exp/weights/best.pt docker_model/  # Copy best.pt for Docker
 
       - run:
           name: Build and Push Docker Image
