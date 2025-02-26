@@ -7,8 +7,11 @@ WORKDIR /app
 # Copy application files
 COPY . /app
 
+# Ensure the model directory exists before copying
+RUN mkdir -p /app/model
+
 # Copy the trained model into the container
-COPY docker_model/best.pt /app/model/best.pt  # Adjust path if needed
+COPY docker_model/best.pt /app/model/  
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
