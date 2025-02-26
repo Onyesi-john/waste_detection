@@ -1,10 +1,9 @@
-Flask
-flask-cors
-opencv-python
-torch
-torchvision
-ultralytics
-Pillow
+Flask==2.0.3
+opencv-python==4.5.5.64
+torch==1.10.2+cpu
+torchvision==0.11.3+cpu
+ultralytics==8.00
+Pillow==9.0.1
 requests
 scipy
 gdown
