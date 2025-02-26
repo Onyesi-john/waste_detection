@@ -16,6 +16,7 @@ jobs:
       - run:
           name: Set Up Python Environment
           command: |
+            cd ultralytics  # Move inside the cloned repo
             apt-get update && apt-get install -y python3-venv  
             python3 -m venv venv
             . venv/bin/activate
@@ -25,7 +26,7 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - .
+            - ultralytics  # Persist the whole repository
 
   train_model:
     docker:
@@ -38,14 +39,23 @@ jobs:
       - run:
           name: Train Model
           command: |
+            cd ultralytics  # Ensure training happens inside the repo
             . venv/bin/activate
             python train.py
 
-            
+      - run:
+          name: Ensure Best Model Exists
+          command: |
+            ls -lah ultralytics/runs/train/exp/weights/
+            if [ ! -f ultralytics/runs/train/exp/weights/best.pt ]; then
+              echo "Training failed: best.pt not found!"
+              exit 1
+            fi
+
       - persist_to_workspace:
           root: .
           paths:
-            - best.pt
+            - ultralytics/runs/train/exp/weights/best.pt  # Persist the trained model
 
   build_and_push_docker_image:
     docker:
@@ -59,6 +69,12 @@ jobs:
           name: Authenticate with Docker Hub
           command: |
             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin 2>/dev/null || { echo "Docker login failed!"; exit 1; }
+      - run:
+          name: Move Best Model to Docker Build Context
+          command: |
+            mkdir -p docker_model
+            cp ultralytics/runs/train/exp/weights/best.pt docker_model/  # Copy best.pt for Docker
+
       - run:
           name: Build and Push Docker Image
           command: |
