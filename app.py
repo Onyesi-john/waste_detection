@@ -1,26 +1,22 @@
-import sys
 import os
 from flask import Flask, render_template, request, redirect, url_for
-import cv2
 import torch
-from PIL import Image
-import numpy as np
-
-# Ensure YOLOv5 is accessible
-sys.path.append(os.path.join(os.getcwd(), "yolov5"))
-
-from yolov5.models.experimental import attempt_load
-from yolov5.utils.general import non_max_suppression
+from pathlib import Path
 
 app = Flask(__name__)
 
-# Ensure CPU usage
-device = torch.device("cpu")
+# Path to trained YOLOv5 model
+MODEL_PATH = "yolov5/runs/train/exp/weights/best.pt"
 
-# Load YOLOv5 model
-model_path = "/home/john/waste_detection/yolov5/runs/train/exp/weights/best.pt"
-model = attempt_load(model_path, device)  # ✅ Fixed map_location issue
+# Load YOLOv5 model from yolov5 directory
+model = torch.hub.load("ultralytics/yolov5", "custom", path=MODEL_PATH, force_reload=True)
 model.eval()
+
+# Define folders
+UPLOAD_FOLDER = "static/uploads"
+DETECTED_FOLDER = "static/detected"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(DETECTED_FOLDER, exist_ok=True)
 
 @app.route("/")
 def home():
@@ -36,41 +32,22 @@ def upload():
         return redirect(request.url)
 
     if file:
-        file_path = f"static/{file.filename}"
-        file.save(file_path)  # Save the uploaded image
+        # Save uploaded image
+        file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(file_path)
 
-        # Load and preprocess image
-        img = Image.open(file_path).convert("RGB")
-        img = img.resize((640, 640))  # Resize to match YOLOv5 expected input size
-        img = np.array(img)
+        # Run YOLOv5 detection
+        results = model(file_path)
 
-        # Convert to tensor and normalize
-        img_tensor = torch.from_numpy(img).float().to(device)
-        img_tensor = img_tensor.permute(2, 0, 1).unsqueeze(0) / 255.0
+        # Save detected image in `static/detected/`
+        output_filename = f"detected_{file.filename}"
+        output_path = os.path.join(DETECTED_FOLDER, output_filename)
+        results.save(Path(DETECTED_FOLDER))  # Saves detection results in the folder
 
-        if img_tensor.shape[1] != 3:  # Ensure 3 color channels (RGB)
-            img_tensor = img_tensor.expand(1, 3, img_tensor.shape[2], img_tensor.shape[3])
+        # Ensure correct path for HTML
+        output_web_path = f"{DETECTED_FOLDER}/{output_filename}"
 
-        print(f"Input Tensor Shape: {img_tensor.shape}")  # Debugging print
-
-        with torch.no_grad():
-            results = model(img_tensor)
-
-        # Process results
-        results = non_max_suppression(results, 0.4, 0.5)[0]  # Apply NMS
-
-        # Draw bounding boxes
-        for det in results:
-            x1, y1, x2, y2, conf, cls = det.tolist()
-            cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-            cv2.putText(img, f"{cls} {conf:.2f}", (int(x1), int(y1) - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-        # Save detected image
-        output_path = f"static/detected_{file.filename}"
-        cv2.imwrite(output_path, cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
-
-        return render_template("result.html", image_path=output_path)
+        return render_template("result.html", image_path=output_web_path)
 
 if __name__ == "__main__":
     app.run(debug=True)

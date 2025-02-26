@@ -27,43 +27,32 @@ jobs:
           paths:
             - waste_detection  # Persist the whole repository
 
-train_model:
-  docker:
-    - image: cimg/python:3.9
-  steps:
-    - checkout
-    - attach_workspace:
-        at: .
+  train_model:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+     
+      - run:
+          name: Train Model
+          command: |
+            . venv/bin/activate
+            python train.py --data data.yaml --weights yolov5s.pt --epochs 50
 
-    - run:
-        name: Create Virtual Environment
-        command: |
-          python -m venv venv
+      - run:
+          name: Ensure Best Model Exists
+          command: |
+            if [ ! -f runs/train/exp/weights/best.pt ]; then
+              echo "Training failed: best.pt not found!"
+              exit 1
+            fi
 
-    - run:
-        name: Install Dependencies
-        command: |
-          . venv/bin/activate
-          pip install -r requirements.txt
-
-    - run:
-        name: Train Model
-        command: |
-          . venv/bin/activate
-          python train.py
-
-    - run:
-        name: Ensure Best Model Exists
-        command: |
-          ls -lah runs/train/exp/weights/
-          if [ ! -f runs/train/exp/weights/best.pt ]; then
-            echo "Training failed: best.pt not found!"
-            exit 1
-          fi
-    - persist_to_workspace:
+      - persist_to_workspace:
           root: .
           paths:
-            - runs/train/exp/weights/best.pt  # Persist the trained model
+            - runs/train/exp/weights/best.pt  # Persist only the model
 
   build_and_push_docker_image:
     docker:
@@ -81,13 +70,12 @@ train_model:
           name: Move Best Model to Docker Build Context
           command: |
             mkdir -p docker_model
-            cp runs/train/exp/weights/best.pt docker_model/  # Copy best.pt for Docker
+            cp runs/train/exp/weights/best.pt docker_model/  # Copy only best.pt
 
       - run:
           name: Build and Push Docker Image
           command: |
             docker build -t $DOCKERHUB_USERNAME/waste_detection:latest .
-            docker images
             docker push $DOCKERHUB_USERNAME/waste_detection:latest
 
 workflows:

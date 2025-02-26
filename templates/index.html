@@ -1,17 +1,52 @@
-index.html:
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Upload Image</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Waste Detection</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>Upload Image for Prediction</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <input type="submit" value="Upload">
-    </form>
-    <a href="/webcam">Use Webcam</a>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Waste Detection</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#upload">Upload</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#predict">Predict</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/webcam">Webcam</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Upload Section -->
+        <section id="upload" class="mb-5">
+            <h2>Upload Image</h2>
+            <form action="/upload" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" class="form-control mb-2">
+                <input type="submit" value="Upload" class="btn btn-primary">
+            </form>
+        </section>
+
+        <!-- Predict Section -->
+        <section id="predict" class="mb-5">
+            <h2>Prediction Results</h2>
+            {% if image_path %}
+                <img src="{{ image_path }}" class="img-fluid" alt="Detected Image">
+            {% else %}
+                <p>No image detected yet.</p>
+            {% endif %}
+        </section>
+
+        <!-- Webcam Section -->
+        <section id="webcam">
+            <h2>Use Webcam</h2>
+            <a href="/webcam" class="btn btn-success">Open Webcam</a>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

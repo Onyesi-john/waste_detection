@@ -2,22 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detection Results</title>
+    <title>Detection Result</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .container { margin-top: 20px; }
+        img { max-width: 100%; height: auto; margin-top: 10px; }
+    </style>
 </head>
 <body>
-    <h2>Object Detection Results</h2>
-
-    <h3>Uploaded Image:</h3>
-    <img src="{{ url_for('static', filename=image) }}" alt="Uploaded Image" width="500">
-
-    <h3>Detected Objects:</h3>
-    <ul>
-        {% for obj in objects %}
-            <li>{{ obj.name }} - Confidence: {{ (obj.confidence * 100) | round(2) }}%</li>
-        {% endfor %}
-    </ul>
-
-    <a href="/">Upload Another Image</a>
+    <div class="container">
+        <h1>Detection Result</h1>
+        <img src="{{ image_path }}" alt="Detected Image">
+        <br><br>
+        <a href="/">Upload another image</a>
+    </div>
 </body>
 </html>
