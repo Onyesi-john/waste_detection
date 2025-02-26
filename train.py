@@ -11,7 +11,7 @@ model.to('cpu')
 
 # Train the model
 model.train(
-    data="data.yaml",  
+    data="/home/john/waste_detection/dataset/data.yaml",  
     epochs=50,  
     imgsz=416,
     batch=8,
