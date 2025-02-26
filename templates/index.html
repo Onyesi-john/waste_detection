@@ -1,81 +1,17 @@
+index.html:
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOLO Object Detection</title>
+    <title>Upload Image</title>
 </head>
 <body>
-    <h1>YOLO Object Detection</h1>
-    <input type="file" id="fileInput" accept="image/*">
-    <button onclick="detectObjects()">Detect Objects</button>
-    <br>
-    <img id="preview" src="#" alt="Image preview" style="display:none; max-width: 100%;">
-    <canvas id="canvas" style="display:none;"></canvas>
-    <h2>Detections:</h2>
-    <ul id="detections"></ul>
-
-    <script>
-        function detectObjects() {
-            const fileInput = document.getElementById('fileInput');
-            const preview = document.getElementById('preview');
-            const canvas = document.getElementById('canvas');
-            const detectionsList = document.getElementById('detections');
-
-            if (fileInput.files.length === 0) {
-                alert("Please select an image file.");
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-
-            reader.onload = function(e) {
-                preview.src = e.target.result;
-                preview.style.display = 'block';
-
-                const formData = new FormData();
-                formData.append('file', file);
-
-                fetch('/detect', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    detectionsList.innerHTML = '';
-                    data.forEach(detection => {
-                        const li = document.createElement('li');
-                        li.textContent = `${detection.label} (${(detection.confidence * 100).toFixed(2)}%)`;
-                        detectionsList.appendChild(li);
-                    });
-
-                    // Draw bounding boxes on the image
-                    const ctx = canvas.getContext('2d');
-                    const img = new Image();
-                    img.onload = function() {
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0);
-                        data.forEach(detection => {
-                            const [x1, y1, x2, y2] = detection.bbox;
-                            ctx.strokeStyle = 'red';
-                            ctx.lineWidth = 2;
-                            ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-                            ctx.fillStyle = 'red';
-                            ctx.fillText(`${detection.label} (${(detection.confidence * 100).toFixed(2)}%)`, x1, y1 - 5);
-                        });
-                        canvas.style.display = 'block';
-                    };
-                    img.src = e.target.result;
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            };
-
-            reader.readAsDataURL(file);
-        }
-    </script>
+    <h1>Upload Image for Prediction</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <input type="submit" value="Upload">
+    </form>
+    <a href="/webcam">Use Webcam</a>
 </body>
 </html>

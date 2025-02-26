@@ -1,54 +1,47 @@
-import torch
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, render_template, request, redirect, url_for
 import cv2
+import torch
+from PIL import Image
 import numpy as np
-import os  # Import the os module
 
 app = Flask(__name__)
 
-# Load your custom YOLOv5nu model using torch.hub
-model = torch.hub.load('ultralytics/yolov5', 'custom', path='/home/john/waste_detection/runs/detect/train/weights/best.pt', force_reload=True)
+# Load your YOLOv5NU model
+model_path = 'waste_detection/exp/weights/best.pt'
+model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
 
 @app.route('/')
-def index():
+def home():
     return render_template('index.html')
 
-@app.route('/detect', methods=['POST'])
-def detect():
+@app.route('/upload', methods=['POST'])
+def upload():
     if 'file' not in request.files:
-        return jsonify({"error": "No file provided"}), 400
-
+        return redirect(request.url)
     file = request.files['file']
     if file.filename == '':
-        return jsonify({"error": "No file selected"}), 400
+        return redirect(request.url)
+    if file:
+        img = Image.open(file.stream)
+        results = model(img)
+        results.save()  # Save predictions
+        return redirect(url_for('home'))
 
-    # Save the file temporarily
-    temp_path = "/tmp/uploaded_image.jpg"
-    file.save(temp_path)
+@app.route('/webcam')
+def webcam():
+    return render_template('webcam.html')
 
-    # Verify the file exists
-    if not os.path.exists(temp_path):
-        return jsonify({"error": "File could not be saved"}), 500
-
-    # Perform object detection
-    results = model(temp_path)
-
-    # Extract detection results
-    detections = []
-    for *xyxy, conf, cls in results.xyxy[0]:
-        x1, y1, x2, y2 = map(int, xyxy)
-        confidence = float(conf)
-        label = model.names[int(cls)]
-        detections.append({
-            "label": label,
-            "confidence": confidence,
-            "bbox": [x1, y1, x2, y2]
-        })
-
-    # Clean up the temporary file
-    os.remove(temp_path)
-
-    return jsonify(detections)
+@app.route('/predict', methods=['POST'])
+def predict():
+    cap = cv2.VideoCapture(0)
+    ret, frame = cap.read()
+    if not ret:
+        return 'Failed to capture image'
+    img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    results = model(img)
+    results.save()  # Save predictions
+    cap.release()
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(debug=True)
