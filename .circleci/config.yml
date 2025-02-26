@@ -23,7 +23,7 @@ jobs:
             pip install -r requirements.txt
 
       - persist_to_workspace:
-          root: .
+          root: /home/circleci/project
           paths:
             - waste_detection  # Persist the whole repository
 
@@ -33,7 +33,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: .
+          at: /home/circleci/project
      
       - run:
           name: Train Model
@@ -44,13 +44,13 @@ jobs:
       - run:
           name: Ensure Best Model Exists
           command: |
-            if [ ! -f runs/train/exp/weights/best.pt ]; then
+            if [ ! -f /home/circleci/project/runs/train/exp/weights/best.pt ]; then
               echo "Training failed: best.pt not found!"
               exit 1
             fi
 
       - persist_to_workspace:
-          root: .
+          root: /home/circleci/project
           paths:
             - runs/train/exp/weights/best.pt  # Persist only the model
 
@@ -60,22 +60,25 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: .
+          at: /home/circleci/project
       - setup_remote_docker
       - run:
-          name: Authenticate with Docker Hub
+          name: Verify Model Exists Before Docker Build
           command: |
-            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin 2>/dev/null || { echo "Docker login failed!"; exit 1; }
+            if [ ! -f /home/circleci/project/runs/train/exp/weights/best.pt ]; then
+              echo "Error: best.pt not found!"
+              exit 1
+            fi
       - run:
           name: Move Best Model to Docker Build Context
           command: |
-            mkdir -p docker_model
-            cp runs/train/exp/weights/best.pt docker_model/  # Copy only best.pt
+            mkdir -p /home/circleci/project/docker_model
+            cp /home/circleci/project/runs/train/exp/weights/best.pt /home/circleci/project/docker_model/
 
       - run:
           name: Build and Push Docker Image
           command: |
-            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest .
+            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest /home/circleci/project
             docker push $DOCKERHUB_USERNAME/waste_detection:latest
 
 workflows:
