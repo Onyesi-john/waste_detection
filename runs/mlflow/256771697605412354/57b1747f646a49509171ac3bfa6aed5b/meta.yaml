@@ -1,5 +1,5 @@
 artifact_uri: /home/john/waste_detection/runs/mlflow/256771697605412354/57b1747f646a49509171ac3bfa6aed5b/artifacts
-end_time: null
+end_time: 1740573464589
 entry_point_name: ''
 experiment_id: '256771697605412354'
 lifecycle_stage: active
@@ -10,6 +10,6 @@ source_name: ''
 source_type: 4
 source_version: ''
 start_time: 1740563621589
-status: 1
+status: 3
 tags: []
 user_id: john

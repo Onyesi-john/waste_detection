@@ -7,8 +7,8 @@ import numpy as np
 app = Flask(__name__)
 
 # Load your YOLOv5NU model
-model_path = 'waste_detection/exp/weights/best.pt'
-model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path)
+model_path = ' /home/john/waste_detection/waste_detection/exp/weights/best.pt'
+model = torch.hub.load('ultralytics/yolov5', 'custom', path=model_path, device='cpu')
 
 @app.route('/')
 def home():
