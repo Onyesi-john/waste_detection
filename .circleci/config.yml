@@ -27,30 +27,40 @@ jobs:
           paths:
             - waste_detection  # Persist the whole repository
 
-  train_model:
-    docker:
-      - image: cimg/python:3.9
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-     
-      - run:
-          name: Train Model
-          command: |
-            . venv/bin/activate
-            python train.py
+train_model:
+  docker:
+    - image: cimg/python:3.9
+  steps:
+    - checkout
+    - attach_workspace:
+        at: .
 
-      - run:
-          name: Ensure Best Model Exists
-          command: |
-            ls -lah runs/train/exp/weights/
-            if [ ! -f runs/train/exp/weights/best.pt ]; then
-              echo "Training failed: best.pt not found!"
-              exit 1
-            fi
+    - run:
+        name: Create Virtual Environment
+        command: |
+          python -m venv venv
 
-      - persist_to_workspace:
+    - run:
+        name: Install Dependencies
+        command: |
+          . venv/bin/activate
+          pip install -r requirements.txt
+
+    - run:
+        name: Train Model
+        command: |
+          . venv/bin/activate
+          python train.py
+
+    - run:
+        name: Ensure Best Model Exists
+        command: |
+          ls -lah runs/train/exp/weights/
+          if [ ! -f runs/train/exp/weights/best.pt ]; then
+            echo "Training failed: best.pt not found!"
+            exit 1
+          fi
+    - persist_to_workspace:
           root: .
           paths:
             - runs/train/exp/weights/best.pt  # Persist the trained model
