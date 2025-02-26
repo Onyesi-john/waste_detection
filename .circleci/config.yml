@@ -9,23 +9,21 @@ jobs:
 
   setup_python_environment:
     docker:
-      - image: cimg/python:3.9  
+      - image: cimg/python:3.9
     steps:
       - checkout
-      
       - run:
           name: Set Up Python Environment
           command: |
-            apt-get update && apt-get install -y python3-venv  
+            apt-get update && apt-get install -y python3-venv
             python3 -m venv venv
             . venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
-
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
-            - waste_detection  # Persist the whole repository
+            - .  # Persist the entire workspace
 
   train_model:
     docker:
@@ -34,13 +32,11 @@ jobs:
       - checkout
       - attach_workspace:
           at: /home/circleci/project
-     
       - run:
           name: Train Model
           command: |
             . venv/bin/activate
-            python train.py --data data.yaml --weights yolov5s.pt --epochs 50
-
+            python train.py --data /home/circleci/project/data.yaml --weights yolov5s.pt --epochs 50
       - run:
           name: Ensure Best Model Exists
           command: |
@@ -48,7 +44,6 @@ jobs:
               echo "Training failed: best.pt not found!"
               exit 1
             fi
-
       - persist_to_workspace:
           root: /home/circleci/project
           paths:
@@ -56,7 +51,7 @@ jobs:
 
   build_and_push_docker_image:
     docker:
-      - image: docker:latest  
+      - image: docker:latest
     steps:
       - checkout
       - attach_workspace:
@@ -74,7 +69,6 @@ jobs:
           command: |
             mkdir -p /home/circleci/project/docker_model
             cp /home/circleci/project/runs/train/exp/weights/best.pt /home/circleci/project/docker_model/
-
       - run:
           name: Build and Push Docker Image
           command: |
