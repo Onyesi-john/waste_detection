@@ -5,7 +5,7 @@ import os
 project_dir = os.path.join(os.getcwd(), 'waste_detection')
 
 # Load a model (ensure the correct file name & path)
-model = YOLO('yolov5nu')  # Change this to your actual file path
+model = YOLO('yolov5nu.pt')  # Change this to your actual file path
 
 model.to('cpu')
 

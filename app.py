@@ -18,7 +18,7 @@ app = Flask(__name__)
 device = torch.device("cpu")
 
 # Load YOLOv5 model
-model_path = "/home/john/waste_detection/waste_detection/exp/weights/best.pt"
+model_path = "/home/john/waste_detection/yolov5/runs/train/exp/weights/best.pt"
 model = attempt_load(model_path, device)  # ✅ Fixed map_location issue
 model.eval()
 
