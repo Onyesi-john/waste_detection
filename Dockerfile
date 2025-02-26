@@ -1,20 +1,14 @@
-# Base image
-FROM python:3.9
+# Use the CircleCI Python image for compatibility
+FROM cimg/python:3.9
 
-# Set working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy application files
-COPY . /app
-
-# Ensure the model directory exists before copying
-RUN mkdir -p /app/model
-
-# Copy the trained model into the container
-COPY docker_model/best.pt /app/model/  
+# Copy everything from the project directory
+COPY . .
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Command to run (modify as needed)
-CMD ["python", "app.py"]
+# Set the default command to run inference
+CMD ["python", "detect.py", "--weights", "runs/train/exp/weights/best.pt", "--source", "0"]
