@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'latest'
-        DOCKERHUB_USERNAME = 'your-dockerhub-username'  // Replace with your DockerHub username
+        DOCKERHUB_USERNAME = 'oyinc'  // Replace with your DockerHub username
         DOCKERHUB_REPO = 'waste_detection'
     }
 
