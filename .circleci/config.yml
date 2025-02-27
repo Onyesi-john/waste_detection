@@ -29,12 +29,16 @@ jobs:
     docker:
       - image: docker:latest
     steps:
-      - checkout
       - attach_workspace:
           at: /workspace
       - setup_remote_docker:
-          version: 20.10.7  # Ensure you are using a compatible Docker version
           docker_layer_caching: true
+      - run:
+          name: Move Best Model to Docker Build Context
+          command: |
+            # Move best.pt to a known location for Docker build
+            mkdir -p /workspace/docker_model
+            cp /workspace/yolov5/runs/train/exp/weights/best.pt /workspace/docker_model/best.pt
       - run:
           name: Set up Buildx
           command: |
@@ -45,7 +49,7 @@ jobs:
           name: Build and Push Docker Image
           command: |
             docker buildx build --platform linux/arm/v7,linux/arm64 --push -t $DOCKERHUB_USERNAME/waste_detection:latest .
-          
+
 workflows:
   version: 2
   build_and_deploy:

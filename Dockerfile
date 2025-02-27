@@ -7,11 +7,12 @@ WORKDIR /app
 # Copy everything from the project directory
 COPY . .
 
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies from both requirements files
+RUN pip install --no-cache-dir -r yolov5/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt  
 
 # Copy the trained model into the container
-COPY best.pt /app/runs/train/exp/weights/best.pt  
+COPY docker_model/best.pt /app/model/best.pt  
 
 # Set the default command to run inference
-CMD ["python", "detect.py", "--weights", "runs/train/exp/weights/best.pt", "--source", "0"]
+CMD ["python", "detect.py", "--weights", "model/best.pt", "--source", "0"]
