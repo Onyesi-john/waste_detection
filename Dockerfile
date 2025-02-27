@@ -4,17 +4,11 @@ FROM cimg/python:3.9
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy project files
+# Copy everything from the project directory
 COPY . .
-
-# Copy trained model to correct location
-COPY docker_model/best.pt /app/model/best.pt  
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port for API if needed
-EXPOSE 5000
-
-# Run the application
-CMD ["python", "app.py"]
+# Set the default command to run inference
+CMD ["python", "detect.py", "--weights", "runs/train/exp/weights/best.pt", "--source", "0"]

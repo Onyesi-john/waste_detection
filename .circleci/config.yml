@@ -1,34 +1,24 @@
 version: 2.1
 
-executors:
-  python-executor:
-    docker:
-      - image: cimg/python:3.9
-    working_directory: ~/project
-
 jobs:
   clone_repository:
-    executor: python-executor
+    docker:
+      - image: cimg/python:3.9
     steps:
       - checkout
 
   setup_python_environment:
-    executor: python-executor
+    docker:
+      - image: cimg/python:3.9
     steps:
       - checkout
       - run:
-          name: Install Dependencies
+          name: Set Up Python Environment
           command: |
             apt-get update && apt-get install -y python3-venv
             python3 -m venv venv
             . venv/bin/activate
             pip install --upgrade pip
-            pip install -r requirements.txt
-      - run:
-          name: Clone YOLOv5 Repository
-          command: |
-            git clone https://github.com/ultralytics/yolov5.git
-            cd yolov5
             pip install -r requirements.txt
       - persist_to_workspace:
           root: ~/project
@@ -36,20 +26,21 @@ jobs:
             - .
 
   train_model:
-    executor: python-executor
+    docker:
+      - image: cimg/python:3.9
     steps:
       - checkout
       - attach_workspace:
           at: ~/project
       - run:
-          name: Train YOLOv5 Model
+          name: Train Model
           command: |
             . venv/bin/activate
-            python train.py
+            python train.py --data /home/circleci/project/data.yaml --weights yolov5n.pt --epochs 50
       - run:
           name: Ensure Best Model Exists
           command: |
-            if [ ! -f ~/project/runs/train/exp/weights/best.pt ]; then
+            if [ ! -f /home/circleci/project/runs/train/exp/weights/best.pt ]; then
               echo "Training failed: best.pt not found!"
               exit 1
             fi
@@ -66,19 +57,18 @@ jobs:
       - attach_workspace:
           at: ~/project
       - setup_remote_docker:
-          version: 20.10.7
+          version: 20.10.7  # Adjust this as needed
           docker_layer_caching: true
       - run:
-          name: Move Best Model to Docker Build Context
+          name: Buildx Setup
           command: |
-            mkdir -p ~/project/docker_model
-            cp ~/project/runs/train/exp/weights/best.pt ~/project/docker_model/
-      - run:
-          name: Build and Push Docker Image with Buildx
-          command: |
-            docker buildx create --use
+            docker run --privileged --rm tonistiigi/binfmt --install all
+            docker buildx create --name mybuilder --use
             docker buildx inspect --bootstrap
-            docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKERHUB_USERNAME/waste_detection:latest --push ~/project
+      - run:
+          name: Build and Push Docker Image for Raspberry Pi
+          command: |
+            docker buildx build --platform linux/arm/v7,linux/arm64 -t $DOCKERHUB_USERNAME/waste_detection:latest --push .
 
 workflows:
   version: 2
