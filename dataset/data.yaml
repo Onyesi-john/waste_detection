@@ -1,6 +1,8 @@
-train: /home/john/waste_detection/dataset/train/images
-val: /home/john/waste_detection/dataset/valid/images
+train: /home/circleci/project/dataset/train/images
+val: /home/circleci/project/dataset/valid/images
 
-nc: 13
+nc: 13  # Number of classes
 
-names: ['banana', 'chili', 'drinkcan', 'drinkpack', 'foodcan', 'lettuce', 'paperbag', 'plasticbag', 'plasticbottle', 'plasticcontainer', 'sweetpotato', 'teabag', 'tissueroll']
+names: ['banana', 'chili', 'drinkcan', 'drinkpack', 'foodcan', 'lettuce', 
+        'paperbag', 'plasticbag', 'plasticbottle', 'plasticcontainer', 
+        'sweetpotato', 'teabag', 'tissueroll']

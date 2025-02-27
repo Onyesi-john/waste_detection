@@ -5,3 +5,5 @@ matplotlib
 pandas
 opencv-python
 PyYAML
+ultralytics
+flask

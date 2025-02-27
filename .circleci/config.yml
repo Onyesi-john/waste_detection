@@ -1,5 +1,10 @@
 version: 2.1
 
+executors:
+  docker-executor:
+    machine:
+      image: ubuntu-2204:current  # Use a full Ubuntu machine for Docker Buildx compatibility
+
 jobs:
   clone_repository:
     docker:
@@ -9,7 +14,7 @@ jobs:
 
   setup_python_environment:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.9  
     steps:
       - checkout
       - run:
@@ -20,64 +25,79 @@ jobs:
             pip install --upgrade pip
             pip install -r requirements.txt
       - persist_to_workspace:
-          root: /home/circleci/project
+          root: ~/project
           paths:
-            - .  # Persist the entire workspace
+            - venv  # Persist virtual environment
+            - requirements.txt
 
   train_model:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.9 
     steps:
       - checkout
       - attach_workspace:
-          at: /home/circleci/project
+          at: ~/project
+      - run:
+          name: Activate Virtual Environment
+          command: |
+            . ~/project/venv/bin/activate
       - run:
           name: Train Model
           command: |
-            . venv/bin/activate
-            cd yolov5
-            python train.py --data ../dataset/data.yaml --weights yolov5nu.pt --epochs 50 --project ../runs --name exp --exist-ok
-      - run:
-          name: Ensure Best Model Exists
-          command: |
-            if [ ! -f /home/circleci/project/runs/exp/weights/best.pt ]; then
-              echo "Training failed: best.pt not found!"
+            cd ~/project
+            python train.py  
+
+            # Debug: List files in the expected output directory
+            ls -l runs/train/exp/weights/
+
+            # Move best.pt to the root directory
+            mv runs/train/exp/weights/best.pt ./best.pt || { echo "Error: best.pt not found!"; exit 1; }
+
+            # Debug: Verify best.pt exists
+            if [ -f "./best.pt" ]; then
+              echo "best.pt found in the root directory!"
+            else
+              echo "Error: best.pt not found in the root directory!"
               exit 1
             fi
       - persist_to_workspace:
-          root: /home/circleci/project
+          root: ~/project
           paths:
-            - runs/exp/weights/best.pt  # Persist only the model
+            - best.pt
 
   build_and_push_docker_image:
-    docker:
-      - image: docker:latest
+    executor: docker-executor  # Use machine executor for full Docker support
     steps:
       - checkout
       - attach_workspace:
-          at: /home/circleci/project
-      - setup_remote_docker
+          at: ~/project
       - run:
-          name: Verify Model Exists Before Docker Build
+          name: Install Docker Buildx
           command: |
-            if [ ! -f /home/circleci/project/runs/exp/weights/best.pt ]; then
-              echo "Error: best.pt not found!"
-              exit 1
-            fi
+            mkdir -p ~/.docker/cli-plugins/
+            curl -L https://github.com/docker/buildx/releases/latest/download/buildx-linux-arm64 -o ~/.docker/cli-plugins/docker-buildx
+            chmod +x ~/.docker/cli-plugins/docker-buildx
+            docker buildx version  # Verify installation
+      - run:
+          name: Enable Docker Buildx
+          command: |
+            docker buildx create --use --name mybuilder
+            docker buildx inspect --bootstrap
       - run:
           name: Move Best Model to Docker Build Context
           command: |
-            mkdir -p /home/circleci/project/docker_model
-            cp /home/circleci/project/runs/exp/weights/best.pt /home/circleci/project/docker_model/
+            mkdir -p ~/project/model
+            mv ~/project/best.pt ~/project/model/
       - run:
-          name: Log in to Docker Hub
+          name: Authenticate with Docker Hub
           command: |
-            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
       - run:
-          name: Build and Push Docker Image
+          name: Build and Push Multi-Platform Docker Image (including Raspberry Pi)
           command: |
-            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest /home/circleci/project
-            docker push $DOCKERHUB_USERNAME/waste_detection:latest
+            docker buildx build --platform linux/amd64,linux/arm64,linux/arm/v7 \
+              -t $DOCKERHUB_USERNAME/waste_detection:latest \
+              --push .
 
 workflows:
   version: 2
