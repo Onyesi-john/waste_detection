@@ -33,8 +33,10 @@ jobs:
       - run:
           name: Copy Best Model to Docker Build Context
           command: |
+            # Ensure the directory for the model exists
             mkdir -p ~/project/docker_model
-            cp ~/project/yolov5/runs/train/exp/weights/best.pt ~/project/docker_model/
+            # Copy the best model from yolov5 runs directory
+            cp ~/project/yolov5/runs/train/exp/weights/best.pt ~/project/docker_model/ || { echo "best.pt not found"; exit 1; }
 
   build_and_push_docker_image:
     docker:
@@ -48,6 +50,7 @@ jobs:
       - run:
           name: Build Docker Image with Buildx
           command: |
+            # Build the Docker image using buildx
             docker buildx build --platform linux/arm/v7 -t $DOCKERHUB_USERNAME/waste_detection:latest --push .
 
 workflows:
