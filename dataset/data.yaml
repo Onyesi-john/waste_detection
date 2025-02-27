@@ -1,5 +1,5 @@
-train: /home/circleci/project/dataset/train/images
-val: /home/circleci/project/dataset/valid/images
+train: /home/john/waste_detection/dataset/images/train
+val: /home/john/waste_detection/dataset/images/val 
 
 
 
