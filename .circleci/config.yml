@@ -9,34 +9,45 @@ jobs:
 
   setup_python_environment:
     docker:
-      - image: cimg/python:3.9  
+      - image: cimg/python:3.9
     steps:
       - checkout
       - run:
           name: Set Up Python Environment
           command: |
-            apt-get update && apt-get install -y python3-venv
             python3 -m venv venv
             . venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
       - persist_to_workspace:
-          root: ~/project
+          root: /home/circleci/project
           paths:
             - .  # Persist the entire workspace
 
-  prepare_model:
+  train_model:
     docker:
       - image: cimg/python:3.9
     steps:
       - checkout
+      - attach_workspace:
+          at: /home/circleci/project
       - run:
-          name: Copy Best Model to Docker Build Context
+          name: Train Model
           command: |
-            # Ensure the directory for the model exists
-            mkdir -p ~/project/docker_model
-            # Copy the best model from yolov5 runs directory
-            cp ~/project/yolov5/runs/train/exp/weights/best.pt ~/project/docker_model/ || { echo "best.pt not found"; exit 1; }
+            . venv/bin/activate
+            cd yolov5
+            python train.py --data ../dataset/data.yaml --weights yolov5nu.pt --epochs 50 --project ../runs --name exp --exist-ok
+      - run:
+          name: Ensure Best Model Exists
+          command: |
+            if [ ! -f /home/circleci/project/runs/exp/weights/best.pt ]; then
+              echo "Training failed: best.pt not found!"
+              exit 1
+            fi
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - runs/exp/weights/best.pt  # Persist only the model
 
   build_and_push_docker_image:
     docker:
@@ -44,14 +55,29 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: ~/project
-      - setup_remote_docker:
-          version: 20.10.7  # Adjust the version if needed
+          at: /home/circleci/project
+      - setup_remote_docker
       - run:
-          name: Build Docker Image with Buildx
+          name: Verify Model Exists Before Docker Build
           command: |
-            # Build the Docker image using buildx
-            docker buildx build --platform linux/arm/v7 -t $DOCKERHUB_USERNAME/waste_detection:latest --push .
+            if [ ! -f /home/circleci/project/runs/exp/weights/best.pt ]; then
+              echo "Error: best.pt not found!"
+              exit 1
+            fi
+      - run:
+          name: Move Best Model to Docker Build Context
+          command: |
+            mkdir -p /home/circleci/project/docker_model
+            cp /home/circleci/project/runs/exp/weights/best.pt /home/circleci/project/docker_model/
+      - run:
+          name: Log in to Docker Hub
+          command: |
+            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+      - run:
+          name: Build and Push Docker Image
+          command: |
+            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest /home/circleci/project
+            docker push $DOCKERHUB_USERNAME/waste_detection:latest
 
 workflows:
   version: 2
@@ -61,9 +87,9 @@ workflows:
       - setup_python_environment:
           requires:
             - clone_repository
-      - prepare_model:
+      - train_model:
           requires:
             - setup_python_environment
       - build_and_push_docker_image:
           requires:
-            - prepare_model
+            - train_model
