@@ -3,15 +3,25 @@ version: 2.1
 jobs:
   clone_repository:
     docker:
-      - image: python:3.9
+      - image: cimg/python:3.9
     steps:
       - checkout
 
   setup_python_environment:
     docker:
-      - image: python:3.9  
+      - image: cimg/python:3.9
     steps:
       - checkout
+      - run:
+          name: Install System Dependencies
+          command: |
+            apt-get update && apt-get install -y \
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            ffmpeg \
+            libsm6 \
+            libxext6 \
+            libxrender1
       - run:
           name: Set Up Python Environment
           command: |
@@ -26,22 +36,31 @@ jobs:
 
   train_model:
     docker:
-      - image: python:3.9
+      - image: cimg/python:3.9
     steps:
       - checkout
       - attach_workspace:
           at: ~/project
       - run:
-          name: Install Dependencies in Training Stage
+          name: Install System Dependencies (For Training)
           command: |
-            # Activate virtual environment
+            apt-get update && apt-get install -y \
+            libgl1-mesa-glx \
+            libglib2.0-0 \
+            ffmpeg \
+            libsm6 \
+            libxext6 \
+            libxrender1
+      - run:
+          name: Install Python Dependencies for Training
+          command: |
             . venv/bin/activate
-
-            # Install dependencies from requirements.txt again (in case some are missing)
             pip install --upgrade pip
             pip install -r requirements.txt  # Ensure ultralytics and other dependencies are installed
-
-            # Train the model
+      - run:
+          name: Train Model
+          command: |
+            . venv/bin/activate
             python train.py
 
             # Debug: List files in the runs/detect/train directory
