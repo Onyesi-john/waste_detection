@@ -10,5 +10,8 @@ COPY . .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy the trained model into the container
+COPY best.pt /app/runs/train/exp/weights/best.pt  
+
 # Set the default command to run inference
 CMD ["python", "detect.py", "--weights", "runs/train/exp/weights/best.pt", "--source", "0"]

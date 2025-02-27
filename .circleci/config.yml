@@ -7,15 +7,6 @@ jobs:
     steps:
       - checkout  # Clones your repository
 
-  clone_yolov5_repository:
-    docker:
-      - image: cimg/python:3.9
-    steps:
-      - run:
-          name: Clone YOLOv5 Repository
-          command: |
-            git clone https://github.com/ultralytics/yolov5.git
-
   setup_python_environment:
     docker:
       - image: cimg/python:3.9
@@ -27,57 +18,12 @@ jobs:
             apt-get update && apt-get install -y python3-venv
             python3 -m venv venv
             . venv/bin/activate
-            # Install YOLOv5 dependencies
-            cd yolov5  # Change directory to yolov5
             pip install --upgrade pip
-            pip install -r requirements.txt  # Install YOLOv5 specific dependencies
-            # Install any additional dependencies from the root requirements.txt
-            cd ..
-            pip install -r requirements.txt  # Install root dependencies if necessary
+            pip install -r requirements.txt
       - persist_to_workspace:
-          root: ~/project/yolov5
+          root: .
           paths:
-            - .
-
-  prepare_data:
-    docker:
-      - image: cimg/python:3.9
-    steps:
-      - checkout
-      - run:
-          name: Ensure Data is Available
-          command: |
-            # Check if the data.yaml file exists and copy if needed
-            if [ ! -f /home/circleci/project/data.yaml ]; then
-              echo "Data configuration file not found!"
-              exit 1
-            fi
-            # If needed, add any commands to load or preprocess the dataset here
-
-  train_model:
-    docker:
-      - image: cimg/python:3.9
-    steps:
-      - checkout
-      - attach_workspace:
-          at: ~/project
-      - run:
-          name: Train Model
-          command: |
-            cd yolov5  # Change directory to yolov5
-            . venv/bin/activate
-            python train.py --data /home/circleci/project/data.yaml --weights yolov5n.pt --epochs 50
-      - run:
-          name: Ensure Best Model Exists
-          command: |
-            if [ ! -f /home/circleci/project/runs/train/exp/weights/best.pt ]; then
-              echo "Training failed: best.pt not found!"
-              exit 1
-            fi
-      - persist_to_workspace:
-          root: ~/project
-          paths:
-            - runs/train/exp/weights/best.pt
+            - .  # Persist the entire workspace
 
   build_and_push_docker_image:
     docker:
@@ -85,38 +31,29 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: ~/project
+          at: /workspace
       - setup_remote_docker:
-          version: 20.10.7  # Adjust this as needed
+          version: 20.10.7  # Ensure you are using a compatible Docker version
           docker_layer_caching: true
       - run:
-          name: Buildx Setup
+          name: Set up Buildx
           command: |
             docker run --privileged --rm tonistiigi/binfmt --install all
-            docker buildx create --name mybuilder --use
+            docker buildx create --use
             docker buildx inspect --bootstrap
       - run:
-          name: Build and Push Docker Image for Raspberry Pi
+          name: Build and Push Docker Image
           command: |
-            docker buildx build --platform linux/arm/v7,linux/arm64 -t $DOCKERHUB_USERNAME/waste_detection:latest --push .
-
+            docker buildx build --platform linux/arm/v7,linux/arm64 --push -t $DOCKERHUB_USERNAME/waste_detection:latest .
+          
 workflows:
   version: 2
   build_and_deploy:
     jobs:
       - clone_repository
-      - clone_yolov5_repository:
-          requires:
-            - clone_repository
       - setup_python_environment:
           requires:
-            - clone_yolov5_repository
-      - prepare_data:
-          requires:
-            - setup_python_environment
-      - train_model:
-          requires:
-            - prepare_data
+            - clone_repository
       - build_and_push_docker_image:
           requires:
-            - train_model
+            - setup_python_environment
