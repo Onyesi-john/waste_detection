@@ -2,12 +2,74 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Webcam</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Object Detection</title>
+    <style>
+        #video, #canvas {
+            display: block;
+            margin: 10px auto;
+            border: 1px solid #ccc;
+        }
+        #capture {
+            display: block;
+            margin: 10px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Capture Image from Webcam</h1>
-    <form action="/predict" method="post">
-        <input type="submit" value="Capture">
-    </form>
+    <h1>Webcam Object Detection</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <button id="capture">Capture and Detect</button>
+
+    <script>
+        // Access the webcam
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const captureButton = document.getElementById("capture");
+        const context = canvas.getContext("2d");
+
+        // Get user media (webcam)
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream;
+            })
+            .catch((err) => {
+                console.error("Error accessing the webcam: ", err);
+            });
+
+        // Capture and process the frame
+        captureButton.addEventListener("click", () => {
+            // Draw the current video frame on the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert the canvas image to a data URL
+            canvas.toBlob((blob) => {
+                // Send the image to the server for detection
+                const formData = new FormData();
+                formData.append("image", blob, "webcam_frame.jpg");
+
+                fetch("/detect_webcam", {
+                    method: "POST",
+                    body: formData,
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    // Display the detected image
+                    const detectedImage = new Image();
+                    detectedImage.src = data.image_path;
+                    detectedImage.onload = () => {
+                        context.clearRect(0, 0, canvas.width, canvas.height);
+                        context.drawImage(detectedImage, 0, 0, canvas.width, canvas.height);
+                    };
+                })
+                .catch((error) => {
+                    console.error("Error detecting objects: ", error);
+                });
+            }, "image/jpeg");
+        });
+    </script>
 </body>
 </html>

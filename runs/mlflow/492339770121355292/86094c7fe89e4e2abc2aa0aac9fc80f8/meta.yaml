@@ -1,0 +1,15 @@
+artifact_uri: /home/john/waste_detection/runs/mlflow/492339770121355292/86094c7fe89e4e2abc2aa0aac9fc80f8/artifacts
+end_time: 1740678610162
+entry_point_name: ''
+experiment_id: '492339770121355292'
+lifecycle_stage: active
+run_id: 86094c7fe89e4e2abc2aa0aac9fc80f8
+run_name: exp
+run_uuid: 86094c7fe89e4e2abc2aa0aac9fc80f8
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1740663015031
+status: 3
+tags: []
+user_id: john
