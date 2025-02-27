@@ -1,24 +1,15 @@
 from ultralytics import YOLO
-import os
 
-# Define the project directory
-project_dir = os.path.join(os.getcwd(), 'waste_detection')
-
-# Load a model (ensure the correct file name & path)
-model = YOLO('yolov5nu.pt')  # Change this to your actual file path
-
-model.to('cpu')
+# Load the model
+model = YOLO("yolov5nu.pt")
 
 # Train the model
 model.train(
-    data="/home/john/waste_detection/dataset/data.yaml",  
-    epochs=50,  
-    imgsz=416,
+    data="/home/circleci/project/dataset/data.yaml",  # Update this path
+    epochs=50,
     batch=8,
-    workers=2,
-    project=project_dir,  # Save results in the waste_detection directory
-    name="exp",  # Use "exp" instead of empty string to avoid errors
-    exist_ok=True  
+    imgsz=416,
+    project="/home/circleci/project/waste_detection",
+    name="exp",
+    exist_ok=True,
 )
-
-print(f"Training completed. Best model saved to {project_dir}/exp/weights/best.pt")
