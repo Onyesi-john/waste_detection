@@ -5,7 +5,12 @@ jobs:
     docker:
       - image: cimg/python:3.9
     steps:
-      - checkout
+      - checkout  # Clones your repository
+
+  clone_yolov5_repository:
+    docker:
+      - image: cimg/python:3.9
+    steps:
       - run:
           name: Clone YOLOv5 Repository
           command: |
@@ -35,6 +40,21 @@ jobs:
           root: ~/project/yolov5
           paths:
             - .
+
+  prepare_data:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: Ensure Data is Available
+          command: |
+            # Check if the data.yaml file exists and copy if needed
+            if [ ! -f /home/circleci/project/data.yaml ]; then
+              echo "Data configuration file not found!"
+              exit 1
+            fi
+            # If needed, add any commands to load or preprocess the dataset here
 
   train_model:
     docker:
@@ -87,12 +107,18 @@ workflows:
   build_and_deploy:
     jobs:
       - clone_repository
-      - setup_python_environment:
+      - clone_yolov5_repository:
           requires:
             - clone_repository
-      - train_model:
+      - setup_python_environment:
+          requires:
+            - clone_yolov5_repository
+      - prepare_data:
           requires:
             - setup_python_environment
+      - train_model:
+          requires:
+            - prepare_data
       - build_and_push_docker_image:
           requires:
             - train_model
