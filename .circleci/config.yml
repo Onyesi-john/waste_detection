@@ -5,11 +5,11 @@ jobs:
     docker:
       - image: cimg/python:3.9
     steps:
-      - checkout  # Clones your repository
+      - checkout
 
   setup_python_environment:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.9  
     steps:
       - checkout
       - run:
@@ -21,34 +21,34 @@ jobs:
             pip install --upgrade pip
             pip install -r requirements.txt
       - persist_to_workspace:
-          root: .
+          root: ~/project
           paths:
             - .  # Persist the entire workspace
+
+  prepare_model:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - run:
+          name: Copy Best Model to Docker Build Context
+          command: |
+            mkdir -p ~/project/docker_model
+            cp ~/project/yolov5/runs/train/exp/weights/best.pt ~/project/docker_model/
 
   build_and_push_docker_image:
     docker:
       - image: docker:latest
     steps:
+      - checkout
       - attach_workspace:
-          at: /workspace
+          at: ~/project
       - setup_remote_docker:
-          docker_layer_caching: true
+          version: 20.10.7  # Adjust the version if needed
       - run:
-          name: Move Best Model to Docker Build Context
+          name: Build Docker Image with Buildx
           command: |
-            # Move best.pt to a known location for Docker build
-            mkdir -p /workspace/docker_model
-            cp /workspace/yolov5/runs/train/exp/weights/best.pt /workspace/docker_model/best.pt
-      - run:
-          name: Set up Buildx
-          command: |
-            docker run --privileged --rm tonistiigi/binfmt --install all
-            docker buildx create --use
-            docker buildx inspect --bootstrap
-      - run:
-          name: Build and Push Docker Image
-          command: |
-            docker buildx build --platform linux/arm/v7,linux/arm64 --push -t $DOCKERHUB_USERNAME/waste_detection:latest .
+            docker buildx build --platform linux/arm/v7 -t $DOCKERHUB_USERNAME/waste_detection:latest --push .
 
 workflows:
   version: 2
@@ -58,6 +58,9 @@ workflows:
       - setup_python_environment:
           requires:
             - clone_repository
-      - build_and_push_docker_image:
+      - prepare_model:
           requires:
             - setup_python_environment
+      - build_and_push_docker_image:
+          requires:
+            - prepare_model
