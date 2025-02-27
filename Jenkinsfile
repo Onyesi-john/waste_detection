@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'latest'
-        DOCKERHUB_USERNAME = 'your-dockerhub-username'  // Replace with your DockerHub username
+        DOCKERHUB_USERNAME = 'oyinc'  // Replace with your DockerHub username
         DOCKERHUB_REPO = 'waste_detection'
     }
 
@@ -18,8 +18,8 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-                        docker buildx create --name mybuilder --use
+                        docker buildx install
+                        docker buildx create --use
                         docker buildx inspect --bootstrap
                     '''
                 }
