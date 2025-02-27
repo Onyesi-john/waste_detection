@@ -1,111 +1,84 @@
 version: 2.1
 
-jobs:
-  clone_repository:
+executors:
+  python-executor:
     docker:
       - image: cimg/python:3.9
+    working_directory: ~/project
+
+jobs:
+  clone_repository:
+    executor: python-executor
     steps:
       - checkout
 
   setup_python_environment:
-    docker:
-      - image: cimg/python:3.9  
+    executor: python-executor
     steps:
       - checkout
       - run:
-          name: Set Up Python Environment
+          name: Install Dependencies
           command: |
             apt-get update && apt-get install -y python3-venv
             python3 -m venv venv
             . venv/bin/activate
             pip install --upgrade pip
             pip install -r requirements.txt
-      - persist_to_workspace:
-          root: ~/project
-          paths:
-            - .  # Persist entire workspace
-
-  prepare_dataset:
-    docker:
-      - image: cimg/python:3.9
-    steps:
-      - checkout
-      - attach_workspace:
-          at: ~/project
       - run:
-          name: Download Dataset
+          name: Clone YOLOv5 Repository
           command: |
-            if [ ! -d "/home/circleci/project/dataset" ]; then
-              echo "Downloading dataset..."
-              wget -O dataset.zip "https://drive.google.com/file/d/1-3KPCCqF2kjNElo9f9L6QwricRqe0PKq"
-              unzip dataset.zip -d /home/circleci/project/dataset
-            else
-              echo "Dataset already exists. Skipping download."
-            fi
+            git clone https://github.com/ultralytics/yolov5.git
+            cd yolov5
+            pip install -r requirements.txt
       - persist_to_workspace:
           root: ~/project
           paths:
-            - dataset  # Persist dataset
+            - .
 
   train_model:
-    docker:
-      - image: cimg/python:3.9
+    executor: python-executor
     steps:
       - checkout
       - attach_workspace:
           at: ~/project
       - run:
-          name: Train Model
+          name: Train YOLOv5 Model
           command: |
             . venv/bin/activate
-            python train.py --data /home/circleci/project/data.yaml --weights yolov5s.pt --epochs 50
+            python train.py
       - run:
           name: Ensure Best Model Exists
           command: |
-            if [ ! -f /home/circleci/project/runs/train/exp/weights/best.pt ]; then
+            if [ ! -f ~/project/runs/train/exp/weights/best.pt ]; then
               echo "Training failed: best.pt not found!"
               exit 1
             fi
       - persist_to_workspace:
           root: ~/project
           paths:
-            - runs/train/exp/weights/best.pt  # Persist only the trained model
+            - runs/train/exp/weights/best.pt
 
   build_and_push_docker_image:
     docker:
-      - image: docker:latest  
+      - image: docker:latest
     steps:
       - checkout
       - attach_workspace:
           at: ~/project
-      - setup_remote_docker
-      - run:
-          name: Install Buildx
-          command: |
-            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-            docker buildx create --use
-            docker buildx inspect --bootstrap
-      - run:
-          name: Verify Model Exists Before Docker Build
-          command: |
-            if [ ! -f /home/circleci/project/runs/train/exp/weights/best.pt ]; then
-              echo "Error: best.pt not found!"
-              exit 1
-            fi
+      - setup_remote_docker:
+          version: 20.10.7
+          docker_layer_caching: true
       - run:
           name: Move Best Model to Docker Build Context
           command: |
-            mkdir -p /home/circleci/project/docker_model
-            cp /home/circleci/project/runs/train/exp/weights/best.pt /home/circleci/project/docker_model/
+            mkdir -p ~/project/docker_model
+            cp ~/project/runs/train/exp/weights/best.pt ~/project/docker_model/
       - run:
           name: Build and Push Docker Image with Buildx
           command: |
-            docker buildx build --platform linux/amd64,linux/arm64 \
-              --push \
-              --tag $DOCKERHUB_USERNAME/waste_detection:latest \
-              --cache-from=type=registry,ref=$DOCKERHUB_USERNAME/waste_detection:latest \
-              --cache-to=type=inline \
-              /home/circleci/project
+            docker buildx create --use
+            docker buildx inspect --bootstrap
+            docker buildx build --platform linux/amd64,linux/arm64 -t $DOCKERHUB_USERNAME/waste_detection:latest --push ~/project
 
 workflows:
   version: 2
@@ -115,12 +88,9 @@ workflows:
       - setup_python_environment:
           requires:
             - clone_repository
-      - prepare_dataset:
-          requires:
-            - setup_python_environment
       - train_model:
           requires:
-            - prepare_dataset
+            - setup_python_environment
       - build_and_push_docker_image:
           requires:
             - train_model
