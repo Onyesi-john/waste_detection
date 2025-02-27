@@ -21,7 +21,7 @@ jobs:
             pip install --upgrade pip
             pip install -r requirements.txt
       - persist_to_workspace:
-          root: /home/circleci/project
+          root: ~/project
           paths:
             - .  # Persist the entire workspace
 
@@ -45,7 +45,7 @@ jobs:
               exit 1
             fi
       - persist_to_workspace:
-          root: /home/circleci/project
+          root: ~/project
           paths:
             - runs/train/exp/weights/best.pt  # Persist only the model
 
@@ -55,7 +55,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-          at: /home/circleci/project
+          at: ~/project
       - setup_remote_docker
       - run:
           name: Verify Model Exists Before Docker Build
