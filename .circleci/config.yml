@@ -15,8 +15,6 @@ jobs:
           name: Clone YOLOv5 Repository
           command: |
             git clone https://github.com/ultralytics/yolov5.git
-            cd yolov5
-            git checkout <desired-branch-or-tag>  # Optional: specify a branch or tag if needed
 
   setup_python_environment:
     docker:
