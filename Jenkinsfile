@@ -3,15 +3,16 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'latest'
-        DOCKERHUB_USERNAME = 'oyinc'  // Replace with your DockerHub username
+        DOCKERHUB_USERNAME = 'oyinc'
         DOCKERHUB_REPO = 'waste_detection'
     }
 
     stages {
-        stage('Setup Docker Buildx') {
+        stage('Enable Buildx') {
             steps {
                 script {
                     sh '''
+                        export DOCKER_CLI_EXPERIMENTAL=enabled
                         docker buildx create --use || true
                         docker buildx inspect --bootstrap || true
                     '''
@@ -19,7 +20,17 @@ pipeline {
             }
         }
 
-        stage('Build and Push Docker Image for Raspberry Pi') {
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([string(credentialsId: 'docker-hub-password', variable: 'DOCKER_PASSWORD')]) {
+                    sh '''
+                        echo $DOCKER_PASSWORD | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Build & Push Multi-Arch Image') {
             steps {
                 script {
                     sh '''
