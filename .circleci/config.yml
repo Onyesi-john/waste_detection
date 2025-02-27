@@ -9,7 +9,7 @@ jobs:
 
   setup_python_environment:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.9  
     steps:
       - checkout
       - run:
@@ -23,7 +23,29 @@ jobs:
       - persist_to_workspace:
           root: ~/project
           paths:
-            - .  # Persist the entire workspace
+            - .  # Persist entire workspace
+
+  prepare_dataset:
+    docker:
+      - image: cimg/python:3.9
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/project
+      - run:
+          name: Download Dataset
+          command: |
+            if [ ! -d "/home/circleci/project/dataset" ]; then
+              echo "Downloading dataset..."
+              wget -O dataset.zip "https://drive.google.com/file/d/1-3KPCCqF2kjNElo9f9L6QwricRqe0PKq"
+              unzip dataset.zip -d /home/circleci/project/dataset
+            else
+              echo "Dataset already exists. Skipping download."
+            fi
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - dataset  # Persist dataset
 
   train_model:
     docker:
@@ -47,16 +69,22 @@ jobs:
       - persist_to_workspace:
           root: ~/project
           paths:
-            - runs/train/exp/weights/best.pt  # Persist only the model
+            - runs/train/exp/weights/best.pt  # Persist only the trained model
 
   build_and_push_docker_image:
     docker:
-      - image: docker:latest
+      - image: docker:latest  
     steps:
       - checkout
       - attach_workspace:
           at: ~/project
       - setup_remote_docker
+      - run:
+          name: Install Buildx
+          command: |
+            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+            docker buildx create --use
+            docker buildx inspect --bootstrap
       - run:
           name: Verify Model Exists Before Docker Build
           command: |
@@ -70,10 +98,14 @@ jobs:
             mkdir -p /home/circleci/project/docker_model
             cp /home/circleci/project/runs/train/exp/weights/best.pt /home/circleci/project/docker_model/
       - run:
-          name: Build and Push Docker Image
+          name: Build and Push Docker Image with Buildx
           command: |
-            docker build -t $DOCKERHUB_USERNAME/waste_detection:latest /home/circleci/project
-            docker push $DOCKERHUB_USERNAME/waste_detection:latest
+            docker buildx build --platform linux/amd64,linux/arm64 \
+              --push \
+              --tag $DOCKERHUB_USERNAME/waste_detection:latest \
+              --cache-from=type=registry,ref=$DOCKERHUB_USERNAME/waste_detection:latest \
+              --cache-to=type=inline \
+              /home/circleci/project
 
 workflows:
   version: 2
@@ -83,9 +115,12 @@ workflows:
       - setup_python_environment:
           requires:
             - clone_repository
-      - train_model:
+      - prepare_dataset:
           requires:
             - setup_python_environment
+      - train_model:
+          requires:
+            - prepare_dataset
       - build_and_push_docker_image:
           requires:
             - train_model
