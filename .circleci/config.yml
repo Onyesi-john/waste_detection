@@ -47,17 +47,14 @@ jobs:
             . venv/bin/activate
             python train.py
 
-            # Debugging: Ensure best.pt exists
-            ls -l runs/detect/train/weights/
+            
 
-            # Move best.pt to root directory
-            mv runs/detect/train/weights/best.pt ./best.pt || { echo "Error: best.pt not found!"; exit 1; }
-
-            # Verify best.pt is in root
-            if [ -f "./best.pt" ]; then
-              echo "✅ best.pt successfully moved!"
+            # Move best.pt to the root directory
+            if [ -f "waste_detection/exp/weights/best.pt" ]; then
+              echo "✅ best.pt found! Moving it to project root."
+              mv waste_detection/exp/weights/best.pt ./best.pt
             else
-              echo "❌ Error: best.pt missing!"
+              echo "❌ Error: best.pt not found!"
               exit 1
             fi
       - persist_to_workspace:
