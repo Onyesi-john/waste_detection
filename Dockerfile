@@ -1,16 +1,16 @@
-# Use the CircleCI Python image for compatibility
+# Use CircleCI's Python image for compatibility
 FROM cimg/python:3.9
 
 # Set working directory
 WORKDIR /app
 
-# Copy project files
-COPY . .
+# Copy only essential project files (excluding datasets)
+COPY app.py requirements.txt static/ templates/ ./
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the trained model into the container
+# Copy the trained model (best.pt) into the container
 COPY best.pt /app/model/best.pt  
 
 # Expose port for web access (e.g., Flask/FastAPI)
