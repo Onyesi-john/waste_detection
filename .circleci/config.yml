@@ -69,8 +69,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: ~/project
-      - setup_remote_docker:
-          version: 24.0.5  # Ensure the latest version is used
+      
       - run:
           name: Enable QEMU for Multi-Arch Builds
           command: |
