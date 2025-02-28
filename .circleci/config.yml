@@ -7,25 +7,15 @@ executors:
 jobs:
   clone_repository:
     docker:
-      - image: cimg/python:3.9
+      - image: cimg/python:3.9  # Use CircleCI’s Python image for AMD64 compatibility
     steps:
       - checkout
 
   setup_python_environment:
     docker:
-      - image: arm64v8/python:3.9  # Use ARM-compatible image
+      - image: cimg/python:3.9  # Use official CircleCI Python image (ARM64 not needed here)
     steps:
       - checkout
-      - run:
-          name: Install System Dependencies
-          command: |
-            apt-get update && sudo apt-get install -y \
-            libgl1-mesa-glx \
-            libglib2.0-0 \
-            ffmpeg \
-            libsm6 \
-            libxext6 \
-            libxrender1
       - run:
           name: Set Up Python Environment
           command: |
@@ -40,23 +30,13 @@ jobs:
 
   train_model:
     docker:
-      - image: arm64v8/python:3.9
+      - image: cimg/python:3.9  # Use same Python image for consistency
     steps:
       - checkout
       - attach_workspace:
           at: ~/project
       - run:
-          name: Install System Dependencies (For Training)
-          command: |
-            apt-get update && sudo apt-get install -y \
-            libgl1-mesa-glx \
-            libglib2.0-0 \
-            ffmpeg \
-            libsm6 \
-            libxext6 \
-            libxrender1
-      - run:
-          name: Install Python Dependencies for Training
+          name: Install Python Dependencies
           command: |
             . venv/bin/activate
             pip install --upgrade pip
@@ -66,6 +46,20 @@ jobs:
           command: |
             . venv/bin/activate
             python train.py
+
+            # Debugging: Ensure best.pt exists
+            ls -l runs/detect/train/weights/
+
+            # Move best.pt to root directory
+            mv runs/detect/train/weights/best.pt ./best.pt || { echo "Error: best.pt not found!"; exit 1; }
+
+            # Verify best.pt is in root
+            if [ -f "./best.pt" ]; then
+              echo "✅ best.pt successfully moved!"
+            else
+              echo "❌ Error: best.pt missing!"
+              exit 1
+            fi
       - persist_to_workspace:
           root: ~/project
           paths:
@@ -87,10 +81,11 @@ jobs:
           command: |
             echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
       - run:
-          name: Build and Push Docker Image for Raspberry Pi
+          name: Build and Push Multi-Arch Docker Image
           command: |
             docker buildx create --use
-            docker buildx build --platform linux/arm64 -t $DOCKERHUB_USERNAME/waste_detection:latest --push .
+            docker buildx build --platform linux/amd64,linux/arm64 \
+              -t $DOCKERHUB_USERNAME/waste_detection:latest --push .
 
 workflows:
   version: 2
