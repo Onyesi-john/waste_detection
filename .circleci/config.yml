@@ -63,13 +63,16 @@ jobs:
             - best.pt
 
   build_and_push_docker_image:
-    docker:
-      - image: docker:24.0  # Use a recent Docker image
+    executor: arm_executor
     steps:
       - checkout
       - attach_workspace:
           at: ~/project
-      
+      - run:
+          name: Start Docker Service
+          command: |
+            sudo systemctl start docker
+            sleep 5  # Give it a few seconds to fully start
       - run:
           name: Enable QEMU for Multi-Arch Builds
           command: |
