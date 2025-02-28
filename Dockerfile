@@ -10,8 +10,8 @@ COPY app.py requirements.txt static/ templates/ ./
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the trained model (best.pt) into the container
-COPY best.pt /app/model/best.pt  
+# Copy the trained model (best.pt) into the /app folder
+COPY best.pt /app/best.pt  
 
 # Expose port for web access (e.g., Flask/FastAPI)
 EXPOSE 5000
